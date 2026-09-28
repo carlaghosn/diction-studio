@@ -47,8 +47,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .tab{font:700 15px var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 15px;border-radius:999px;cursor:pointer}
 .tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .grid{display:grid;grid-template-columns:270px minmax(0,1fr) 300px;gap:16px;align-items:start}
-@media (max-width:1180px){.grid{grid-template-columns:250px minmax(0,1fr)}.side-r{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:16px}}
-@media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}.side-r{grid-template-columns:1fr}}
+.grid.nonav{grid-template-columns:minmax(0,1fr)}
+.grid.nonav main{max-width:980px}
+@media (max-width:1180px){.grid{grid-template-columns:250px minmax(0,1fr)}.grid.nonav{grid-template-columns:minmax(0,1fr)}.side-r{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:16px}}
+.vtable td:first-child{width:74px}
+@media (max-width:760px){.grid,.grid.nonav{grid-template-columns:minmax(0,1fr)}.side-r{grid-template-columns:1fr}}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
 .card h2{font:800 19px var(--display);margin:0 0 4px;letter-spacing:-.01em}
 .hint{margin:0 0 10px;color:var(--muted);font-size:13.5px}
@@ -119,6 +122,16 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .today li{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}
 .today ol{margin:0;padding-left:0;list-style:none}
 .today button{background:none;border:0;padding:0;color:var(--ink);text-align:left;cursor:pointer;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.rep{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0 14px}
+.rep div{background:var(--surface-2);border-radius:12px;padding:10px 12px}
+.rep b{display:block;font:800 26px var(--display)}
+.rep span{font-size:12.5px;color:var(--muted)}
+.rtable{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+.rtable th{text-align:left;font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line)}
+.rtable td{padding:7px 8px;border-bottom:1px solid var(--line)}
+.bar{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden;min-width:80px}
+.bar b{display:block;height:100%;background:var(--ok)}
+.voiceinfo{font-size:12.5px;color:var(--muted);margin-top:8px}
 .streak{font:800 30px var(--display)}
 .note{font-size:12.5px;color:var(--muted);margin:8px 0 0}
 .books a{color:var(--ink)}
@@ -143,9 +156,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
     <button class="tab" role="tab" id="t-drill" aria-selected="true">Twisters &amp; drills</button>
     <button class="tab" role="tab" id="t-vowels" aria-selected="false">Vowels (IPA)</button>
     <button class="tab" role="tab" id="t-sing" aria-selected="false">Singing diction</button>
+    <button class="tab" role="tab" id="t-prog" aria-selected="false">Progress report</button>
   </div>
 
-  <div class="grid">
+  <div class="grid" id="grid">
     <nav class="card" aria-label="Drills" id="navCard">
       <h2>Pick a drill</h2>
       <p class="hint">Each sound has word lists, sound-alike pairs, phrases, tongue twisters and a passage. Tap a group to open it.</p>
@@ -181,6 +195,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
         </div>
         <div class="best"><div><b id="bestBpm">&#x2013;</b><span>best clean speed (beat)</span></div><div><b id="bestTime">&#x2013;</b><span>best time (own pace)</span></div><div><b id="doneCount">0</b><span>times practiced</span></div></div>
         <div class="tipbox" id="dTip"></div>
+        <p class="voiceinfo" id="voiceInfo"></p>
       </section>
 
       <section class="card" id="vowelPanel" hidden>
@@ -189,6 +204,13 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
         <div class="tablewrap"><table class="vtable" id="vtable"></table></div>
       </section>
 
+      <section class="card" id="progPanel" hidden>
+        <h2>Progress report</h2>
+        <p class="hint">A summary to show a coach. Copy it into a message, or show this screen at a lesson.</p>
+        <div id="progBody"></div>
+        <div class="controls"><button class="go" id="copyRep" style="--c:var(--lips)">Copy report for coach</button><span class="src" id="copyNote"></span></div>
+        <textarea id="repText" readonly hidden style="width:100%;height:220px;margin-top:10px;font:13px var(--mono)"></textarea>
+      </section>
       <section class="card" id="singPanel" hidden>
         <h2>Singing diction: the habits that make words clear</h2>
         <p class="hint">These are the ideas taught in American voice and stage-speech training, in plain words.</p>
@@ -196,7 +218,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
       </section>
     </main>
 
-    <aside class="side-r">
+    <aside class="side-r" id="sideR">
       <section class="card today">
         <h2>Today's 10 minutes</h2>
         <p class="hint">A new mix every day, covering every part of the mouth over the week.</p>
@@ -728,8 +750,16 @@ let VOICE = null;
 function pickVoice() {
   if (!('speechSynthesis' in window)) return;
   const vs = speechSynthesis.getVoices().filter(v => /^en[-_]US/i.test(v.lang));
+  const prem = vs.find(v => /premium/i.test(v.name)) || vs.find(v => /enhanced/i.test(v.name));
+  if (prem) { VOICE = prem; showVoice(); return; }
   const pref = ['Samantha', 'Ava', 'Allison', 'Susan', 'Zoe', 'Nicky', 'Google US English', 'Microsoft Aria', 'Microsoft Jenny', 'Microsoft Zira'];
   VOICE = pref.map(n => vs.find(v => v.name.includes(n))).find(Boolean) || vs.find(v => v.localService) || vs[0] || null;
+  showVoice();
+}
+function showVoice() {
+  const el = $('voiceInfo'); if (!el) return;
+  const good = VOICE && /premium|enhanced/i.test(VOICE.name);
+  el.innerHTML = VOICE ? `Voice: ${VOICE.name}` + (good ? '' : '. For a more natural voice on iPad: Settings \u{2192} Accessibility \u{2192} Spoken Content \u{2192} Voices \u{2192} English (US), then download a Premium voice such as Ava. The app will use it automatically.') : 'No American English voice found on this device.';
 }
 if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 function speak(text, rate) {
@@ -769,14 +799,47 @@ $('vtable').innerHTML = '<thead><tr><th>IPA</th><th>As in</th><th>For singing</t
 $('vtable').addEventListener('click', e => { const b = e.target.closest('.say'); if (b) speak(b.dataset.w, .7); });
 $('rules').innerHTML = RULES.map(([h, p]) => `<li><b>${h}</b>${p}</li>`).join('');
 
+/* ---------- progress report ---------- */
+function daysBack(n) { const out = []; const d = new Date(); for (let i = 0; i < n; i++) { out.push(dk(d)); d.setDate(d.getDate() - 1); } return out; }
+function buildReport() {
+  const last7 = daysBack(7), last30 = daysBack(30);
+  const active = k => DB.days[k] && Object.keys(DB.days[k]).length;
+  const d7 = last7.filter(active).length, d30 = last30.filter(active).length;
+  const ever = new Set(); Object.values(DB.days).forEach(o => Object.keys(o).forEach(id => ever.add(id)));
+  const reps = Object.values(DB.count).reduce((a, b) => a + b, 0);
+  const selfIds = Object.keys(DB.self || {}); const selfAvg = selfIds.length ? (selfIds.reduce((a, k) => a + DB.self[k], 0) / selfIds.length) : null;
+  let h = `<div class="rep"><div><b>${$('streak').textContent}</b><span>day streak</span></div><div><b>${d7}/7</b><span>days practiced this week</span></div><div><b>${d30}</b><span>days in the last 30</span></div><div><b>${ever.size}/${D.length}</b><span>pages practiced at least once</span></div><div><b>${reps}</b><span>total practice rounds</span></div><div><b>${selfAvg == null ? '\u{2013}' : selfAvg.toFixed(1) + '/7'}</b><span>average self-check</span></div></div>`;
+  h += '<table class="rtable"><thead><tr><th>Sound group</th><th>Practiced</th><th></th><th>Best speed</th></tr></thead><tbody>';
+  const lines = [];
+  GROUPS.forEach(([g, name]) => {
+    const items = D.filter(d => d.g === g), done = items.filter(d => ever.has(d.id)).length;
+    const speeds = items.map(d => DB.best[d.id]).filter(Boolean), best = speeds.length ? Math.max(...speeds) + ' BPM' : '\u{2013}';
+    h += `<tr><td>${name}</td><td>${done}/${items.length}</td><td><div class="bar"><b style="width:${Math.round(done / items.length * 100)}%"></b></div></td><td>${best}</td></tr>`;
+    lines.push(`${name}: ${done}/${items.length} pages practiced${speeds.length ? ', best clean speed ' + best : ''}`);
+  });
+  h += '</tbody></table>';
+  const weak = selfIds.filter(k => DB.self[k] <= 4).map(k => D.find(d => d.id === k)).filter(Boolean).slice(0, 6);
+  if (weak.length) h += `<p class="hint" style="margin-top:12px"><b>Needs work (self-check 4/7 or lower):</b> ${weak.map(d => d.t.replace(/-/g, '').slice(0, 40)).join(' \u{B7} ')}</p>`;
+  $('progBody').innerHTML = h;
+  S.reportText = [`Diction Studio progress (${new Date().toLocaleDateString()})`, `Streak: ${$('streak').textContent} days \u{B7} This week: ${d7}/7 days \u{B7} Last 30 days: ${d30} days`,
+    `Pages practiced: ${ever.size}/${D.length} \u{B7} Total rounds: ${reps}` + (selfAvg == null ? '' : ` \u{B7} Average self-check: ${selfAvg.toFixed(1)}/7`), '', ...lines,
+    ...(weak.length ? ['', 'Needs work: ' + weak.map(d => d.t.replace(/-/g, '')).join('; ')] : [])].join('\n');
+}
+$('copyRep').onclick = async () => {
+  const t = S.reportText || '';
+  try { await navigator.clipboard.writeText(t); $('copyNote').textContent = 'Copied. Paste it into a message to the coach.'; }
+  catch (e) { const ta = $('repText'); ta.hidden = false; ta.value = t; ta.focus(); ta.select(); $('copyNote').textContent = 'Select all and copy the text below.'; }
+};
+
 /* ---------- tabs ---------- */
 function setTab(t) {
-  ['drill','vowels','sing'].forEach(k => $('t-' + k).setAttribute('aria-selected', k === t));
-  $('drillPanel').hidden = t !== 'drill'; $('vowelPanel').hidden = t !== 'vowels'; $('singPanel').hidden = t !== 'sing';
-  $('navCard').hidden = t !== 'drill';
+  ['drill','vowels','sing','prog'].forEach(k => $('t-' + k).setAttribute('aria-selected', k === t));
+  $('drillPanel').hidden = t !== 'drill'; $('vowelPanel').hidden = t !== 'vowels'; $('singPanel').hidden = t !== 'sing'; $('progPanel').hidden = t !== 'prog';
+  $('navCard').hidden = t !== 'drill'; $('sideR').hidden = t !== 'drill'; $('grid').classList.toggle('nonav', t !== 'drill');
   if (t !== 'drill') stopRead(true);
+  if (t === 'prog') buildReport();
 }
-['drill','vowels','sing'].forEach(k => $('t-' + k).onclick = () => setTab(k));
+['drill','vowels','sing','prog'].forEach(k => $('t-' + k).onclick = () => setTab(k));
 
 /* ---------- today ---------- */
 function todaysPlan() {
