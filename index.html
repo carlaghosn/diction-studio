@@ -189,7 +189,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
           <label class="chk"><input type="checkbox" id="ladder" checked> Speed up each round</label>
           <label class="ctl" for="reps">Rounds <select id="reps"><option>1</option><option>2</option><option selected>3</option><option>5</option></select></label>
         </div>
-        <p class="src" id="drillNote" hidden>Warm-up drills use made-up syllables, so "Hear it" and "Test me" are off here. The computer voice can&#x2019;t say them naturally. They work on every word list, pair, phrase, twister and passage.</p>
+        <p class="src" id="drillNote" hidden>"Hear it" reads these syllables slowly, one at a time. "Test me" is off on warm-ups because speech recognition can&#x2019;t grade made-up syllables. It works on every word list, pair, phrase, twister and passage.</p>
         <div class="status" id="status">Say each highlighted syllable as it lights up. Two syllables per click.</div>
         <div class="controls">
           <button class="btn" id="nailBtn">&#x2713; Nailed it: go faster next time</button>
@@ -671,8 +671,7 @@ function select(d) {
   const sy = syllables(d.t, d.k);
   $('dText').className = 'big' + (d.k === 'Words' || d.k === 'Pairs' ? ' list' : d.k === 'Passage' ? ' passage' : '');
   $('dText').innerHTML = sy.map((s, i) => `<span class="sy" data-i="${i}">${s.text}</span>${s.end ? ' ' : ''}`).join('');
-  $('hearBtn').disabled = d.k === 'Drill';
-  $('hearBtn').title = d.k === 'Drill' ? 'Made-up syllables: the computer voice can\u{2019}t say these naturally' : '';
+  $('hearBtn').disabled = false; $('hearBtn').title = '';
   $('drillNote').hidden = d.k !== 'Drill';
   $('dFocus').innerHTML = d.focus.map(f => `<span class="fchip">${f}</span>`).join('');
   $('dTip').innerHTML = `<b>How:</b> ${d.tip}`;
@@ -790,7 +789,7 @@ function speak(text, rate) {
   if (VOICE) u.voice = VOICE;
   speechSynthesis.speak(u);
 }
-$('hearBtn').onclick = () => speak(S.cur.t.replace(/-/g, '').replace(/\//g, ', ').replace(/ /g, S.cur.k === 'Words' || S.cur.k === 'Pairs' ? ', ' : ' '), .75);
+$('hearBtn').onclick = () => S.cur.k === 'Drill' ? speak(S.cur.t.split(/\s+/).join(', '), .6) : speak(S.cur.t.replace(/-/g, '').replace(/\//g, ', ').replace(/ /g, S.cur.k === 'Words' || S.cur.k === 'Pairs' ? ', ' : ' '), .75);
 
 /* ---------- recording ---------- */
 const R = { rec:null, stream:null, chunks:[] };
