@@ -631,6 +631,7 @@ function select(d) {
   const sy = syllables(d.t, d.k);
   $('dText').className = 'big' + (d.k === 'Words' || d.k === 'Pairs' ? ' list' : d.k === 'Passage' ? ' passage' : '');
   $('dText').innerHTML = sy.map((s, i) => `<span class="sy" data-i="${i}">${s.text}</span>${s.end ? ' ' : ''}`).join('');
+  $('hearBtn').hidden = d.k === 'Drill';
   $('dFocus').innerHTML = d.focus.map(f => `<span class="fchip">${f}</span>`).join('');
   $('dTip').innerHTML = `<b>How:</b> ${d.tip}`;
   const start = DB.best[d.id] ? Math.max(d.bpm, DB.best[d.id]) : d.bpm;
@@ -723,12 +724,19 @@ $('nailBtn').onclick = () => {
 };
 
 /* ---------- speech ---------- */
+let VOICE = null;
+function pickVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const vs = speechSynthesis.getVoices().filter(v => /^en[-_]US/i.test(v.lang));
+  const pref = ['Samantha', 'Ava', 'Allison', 'Susan', 'Zoe', 'Nicky', 'Google US English', 'Microsoft Aria', 'Microsoft Jenny', 'Microsoft Zira'];
+  VOICE = pref.map(n => vs.find(v => v.name.includes(n))).find(Boolean) || vs.find(v => v.localService) || vs[0] || null;
+}
+if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 function speak(text, rate) {
   if (!('speechSynthesis' in window)) { $('status').textContent = 'This browser can\u{2019}t read aloud.'; return; }
-  speechSynthesis.cancel();
+  speechSynthesis.cancel(); if (!VOICE) pickVoice();
   const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = rate || .8;
-  const v = speechSynthesis.getVoices().find(v => /en-US/i.test(v.lang) && /Samantha|Google US|Allison|Ava|Aria|Jenny/i.test(v.name)) || speechSynthesis.getVoices().find(v => /en-US/i.test(v.lang));
-  if (v) u.voice = v;
+  if (VOICE) u.voice = VOICE;
   speechSynthesis.speak(u);
 }
 $('hearBtn').onclick = () => speak(S.cur.t.replace(/-/g, '').replace(/\//g, ', ').replace(/ /g, S.cur.k === 'Words' || S.cur.k === 'Pairs' ? ', ' : ' '), .75);
@@ -792,7 +800,6 @@ function buildToday() {
   $('streak').textContent = n;
 }
 
-if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => {};
 S.open = 'warm'; buildList(); select(D[0]); buildList(); buildToday();
 })();
 </script>
