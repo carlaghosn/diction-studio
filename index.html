@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Diction Studio">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#e23d6d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Diction Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=DM+Mono:wght@500&family=Noto+Sans:wght@500&display=swap">
+<style>
+[hidden]{display:none!important}
+:root{
+  --bg:#f3f1ee; --surface:#ffffff; --surface-2:#f6f3f0; --ink:#1f1a1c; --muted:#6c6266; --line:#e3ddd8;
+  --lips:#e23d6d; --tip:#0f9b8e; --back:#6a5cff; --hiss:#d9822b; --rl:#2f86d6; --th:#8a5a2b; --vowel:#b0407f; --warm:#3f8f3f; --sing:#c2410c;
+  --hl:#ffe066; --ok:#15924f;
+  --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"DM Mono",ui-monospace,Menlo,monospace;
+  --ipa:"Noto Sans","Segoe UI","Lucida Grande",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){color-scheme:dark;
+    --bg:#141113; --surface:#1d191b; --surface-2:#262124; --ink:#f2ecee; --muted:#a79ca1; --line:#342d31;
+    --lips:#ff6b93; --tip:#35c9b9; --back:#9a8fff; --hiss:#f0a354; --rl:#5eaaf0; --th:#c8935e; --vowel:#e27cb7; --warm:#6cc96c; --sing:#ff8a5c; --hl:#806a00; --ok:#3fd18a;}
+}
+:root[data-theme="dark"]{color-scheme:dark;
+  --bg:#141113; --surface:#1d191b; --surface-2:#262124; --ink:#f2ecee; --muted:#a79ca1; --line:#342d31;
+  --lips:#ff6b93; --tip:#35c9b9; --back:#9a8fff; --hiss:#f0a354; --rl:#5eaaf0; --th:#c8935e; --vowel:#e27cb7; --warm:#6cc96c; --sing:#ff8a5c; --hl:#806a00; --ok:#3fd18a;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1280px;margin:0 auto;padding-inline:clamp(16px,3vw,28px);padding-block:20px 44px}
+header.top{display:flex;flex-wrap:wrap;gap:8px 28px;align-items:flex-end;justify-content:space-between;margin-bottom:16px}
+.eyebrow{font:500 11.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{font:800 clamp(32px,4.6vw,52px)/.98 var(--display);margin:4px 0 0;letter-spacing:-.02em}
+.lede{max-width:56ch;margin:0;color:var(--muted)}
+button,select,input{font:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--lips);outline-offset:2px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tab{font:700 15px var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 15px;border-radius:999px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:270px minmax(0,1fr) 300px;gap:16px;align-items:start}
+@media (max-width:1180px){.grid{grid-template-columns:250px minmax(0,1fr)}.side-r{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:16px}}
+@media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}.side-r{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card h2{font:800 19px var(--display);margin:0 0 4px;letter-spacing:-.01em}
+.hint{margin:0 0 10px;color:var(--muted);font-size:13.5px}
+.side-r{display:grid;gap:16px}
+
+/* list */
+.glabel{font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:12px 0 6px;display:flex;align-items:center;gap:8px}
+.glabel i{width:10px;height:10px;border-radius:3px;background:var(--c)}
+.item{display:grid;grid-template-columns:22px 1fr;gap:8px;width:100%;text-align:left;background:transparent;border:1px solid transparent;border-radius:10px;padding:7px 8px;cursor:pointer;color:var(--ink)}
+.item:hover{background:var(--surface-2)}
+.item[aria-pressed="true"]{background:var(--surface-2);border-color:var(--c);box-shadow:inset 3px 0 0 var(--c)}
+.item b{font-size:14px;line-height:1.3;font-weight:700}
+.tick{width:20px;height:20px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;font-size:13px;color:#fff;margin-top:1px}
+.tick.on{background:var(--ok);border-color:var(--ok)}
+
+/* main */
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pill{font:700 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;color:#fff;background:var(--c)}
+.src{font-size:12.5px;color:var(--muted)}
+.big{font:800 clamp(26px,3.6vw,44px)/1.25 var(--display);letter-spacing:-.01em;margin:14px 0 6px;text-wrap:balance}
+.big .sy{border-radius:8px;padding:0 1px;transition:background .08s}
+.big .sy.on{background:var(--hl)}
+.big .sy.done{color:var(--muted)}
+.big.list{font-size:clamp(22px,2.8vw,32px);line-height:1.6}
+.big.list .sy{display:inline-block;margin:0 10px 4px 0;padding:0 6px;border:1px solid var(--line);border-radius:10px}
+.big.passage{font-size:clamp(19px,2.2vw,25px);line-height:1.55;font-weight:600}
+.gbtn{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:0;padding:6px 2px;cursor:pointer;color:var(--ink);font:500 11.5px var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.gbtn i{width:10px;height:10px;border-radius:3px;background:var(--c);display:inline-block;margin-right:8px}
+.gbtn small{color:var(--muted);letter-spacing:0}
+.kind{font:500 10.5px var(--mono);color:var(--muted);display:block;text-transform:uppercase;letter-spacing:.06em}
+.watch{font:800 26px var(--display);font-variant-numeric:tabular-nums}
+.focus{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.fchip{font-size:12.5px;border-radius:999px;padding:3px 10px;background:var(--surface-2);border:1px solid var(--line)}
+.controls{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-top:16px}
+.go{font:800 16px var(--body);background:var(--c);color:#fff;border:0;border-radius:999px;padding:11px 20px;cursor:pointer}
+.go:hover{filter:brightness(1.08)}
+.btn{font:700 14px var(--body);border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:9px 13px;cursor:pointer}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.btn.rec[aria-pressed="true"]{background:#d32f2f;color:#fff;border-color:#d32f2f}
+.ctl{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700}
+.ctl output{font:500 13px var(--mono);min-width:64px}
+.ctl input[type=range]{width:140px;accent-color:var(--c)}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:13.5px}
+.status{margin-top:12px;min-height:26px;font-weight:700}
+.tipbox{margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--surface-2);font-size:14.5px}
+.tipbox b{color:var(--c)}
+.best{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.best div{background:var(--surface-2);border-radius:10px;padding:8px 12px;min-width:120px}
+.best b{display:block;font:800 22px var(--display)}
+.best span{font-size:12px;color:var(--muted)}
+.player{margin-top:10px;width:100%}
+
+/* vowels */
+.vtable{width:100%;border-collapse:collapse;font-size:14px}
+.vtable th{text-align:left;font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line)}
+.vtable td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+.ipa{font:500 22px var(--ipa);color:var(--vowel);white-space:nowrap}
+.say{font:700 12.5px var(--body);border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:8px;padding:4px 9px;cursor:pointer}
+.tablewrap{overflow-x:auto}
+.rules{margin:0;padding-left:20px;display:grid;gap:10px}
+.rules b{display:block}
+.today li{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}
+.today ol{margin:0;padding-left:0;list-style:none}
+.today button{background:none;border:0;padding:0;color:var(--ink);text-align:left;cursor:pointer;font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.streak{font:800 30px var(--display)}
+.note{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+.books a{color:var(--ink)}
+.books li{margin-bottom:6px}
+@media (prefers-reduced-motion: reduce){.big .sy{transition:none}}
+</style>
+<style>body{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Speech &#xB7; enunciation &#xB7; singing diction</div>
+      <h1>Diction Studio</h1>
+    </div>
+    <p class="lede">Ten minutes a day to wake up the lips, tongue and jaw. Read tongue twisters to a beat that speeds up as you get cleaner, record yourself, and learn the vowels and consonant habits singers use.</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="t-drill" aria-selected="true">Twisters &amp; drills</button>
+    <button class="tab" role="tab" id="t-vowels" aria-selected="false">Vowels (IPA)</button>
+    <button class="tab" role="tab" id="t-sing" aria-selected="false">Singing diction</button>
+  </div>
+
+  <div class="grid">
+    <nav class="card" aria-label="Drills" id="navCard">
+      <h2>Pick a drill</h2>
+      <p class="hint">Each sound has word lists, sound-alike pairs, phrases, tongue twisters and a passage. Tap a group to open it.</p>
+      <div id="list"></div>
+    </nav>
+
+    <main>
+      <section class="card" id="drillPanel">
+        <div class="meta"><span class="pill" id="dPill"></span><span class="src" id="dSrc"></span></div>
+        <div class="big" id="dText" aria-live="off"></div>
+        <div class="focus" id="dFocus"></div>
+        <div class="controls">
+          <button class="go" id="goBtn">&#x25B6; Read to the beat</button>
+          <button class="btn" id="paceBtn">&#x23F1; Read at my own pace</button>
+          <button class="btn" id="hearBtn">&#x1F50A; Hear it</button>
+          <label class="ctl" for="bpm">Speed <input type="range" id="bpm" min="40" max="200" step="4" value="72"><output id="bpmOut">72 BPM</output></label>
+          <label class="chk"><input type="checkbox" id="ladder" checked> Speed up each round</label>
+          <label class="ctl" for="reps">Rounds <select id="reps"><option>1</option><option>2</option><option selected>3</option><option>5</option></select></label>
+        </div>
+        <div class="status" id="status">Say each highlighted syllable as it lights up. Two syllables per click.</div>
+        <div class="controls">
+          <button class="btn" id="nailBtn">&#x2713; Nailed it: go faster next time</button>
+          <button class="btn rec" id="recBtn" aria-pressed="false">&#x25CF; Record me</button>
+          <span class="src" id="recNote"></span>
+        </div>
+        <audio class="player" id="player" controls hidden></audio>
+        <div class="best"><div><b id="bestBpm">&#x2013;</b><span>best clean speed (beat)</span></div><div><b id="bestTime">&#x2013;</b><span>best time (own pace)</span></div><div><b id="doneCount">0</b><span>times practiced</span></div></div>
+        <div class="tipbox" id="dTip"></div>
+      </section>
+
+      <section class="card" id="vowelPanel" hidden>
+        <h2>The vowels of American English</h2>
+        <p class="hint">Singers use the International Phonetic Alphabet (IPA) to write sounds exactly. Tap Hear it for an example word. Singing is mostly vowels, so clean vowels are clean singing.</p>
+        <div class="tablewrap"><table class="vtable" id="vtable"></table></div>
+      </section>
+
+      <section class="card" id="singPanel" hidden>
+        <h2>Singing diction: the habits that make words clear</h2>
+        <p class="hint">These are the ideas taught in American voice and stage-speech training, in plain words.</p>
+        <ol class="rules" id="rules"></ol>
+      </section>
+    </main>
+
+    <aside class="side-r">
+      <section class="card today">
+        <h2>Today's 10 minutes</h2>
+        <p class="hint">A new mix every day, covering every part of the mouth over the week.</p>
+        <ol id="today"></ol>
+        <p class="note"><span class="streak" id="streak">0</span> day streak</p>
+      </section>
+      <section class="card books">
+        <h2>Books to go deeper</h2>
+        <p class="hint">This app uses classic public-domain twisters and original ones. For more, see:</p>
+        <ul>
+          <li><a href="https://www.amazon.com/Rodney-Saulsberrys-Tongue-Twisters-Warm-Ups/dp/0974767824" target="_blank" rel="noopener">Rodney Saulsberry, Tongue Twisters and Vocal Warm-Ups</a></li>
+          <li><a href="https://www.amazon.com/Tongue-Twisters-Big-Book-Clarity/dp/B0C7T1MRKP" target="_blank" rel="noopener">Nilam Pathak, Tongue Twisters Big Book</a></li>
+          <li>Edith Skinner, Speak with Distinction (the classic American stage-speech textbook)</li>
+        </ul>
+        <p class="note">Recordings stay on this device and disappear when you leave the page.</p>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ---------- content ---------- */
+const GROUPS = [
+  ['warm', 'Warm-ups', 'var(--warm)'],
+  ['p', 'P and B', 'var(--lips)'], ['m', 'M and W', 'var(--lips)'],
+  ['t', 'T and D', 'var(--tip)'], ['n', 'N and NG', 'var(--tip)'], ['l', 'L', 'var(--tip)'],
+  ['k', 'K and G', 'var(--back)'],
+  ['s', 'S and Z', 'var(--hiss)'], ['sh', 'SH, CH and J', 'var(--hiss)'],
+  ['r', 'R', 'var(--rl)'], ['th', 'TH', 'var(--th)'], ['f', 'F and V', 'var(--th)'],
+  ['vowel', 'Vowels', 'var(--vowel)'], ['end', 'Endings and clusters', 'var(--vowel)'],
+  ['speed', 'Speed builders', 'var(--back)'], ['sing', 'Sung lines', 'var(--sing)']
+];
+// k = kind of page. Words: one word per beat. Pairs: one pair per two beats. Others: syllables split with "-" (or one word) per half beat.
+// src: "Traditional" = folk/public-domain; "Original" = written for this app; "Classic drill" = standard speech exercise.
+const D = [
+  // ---------- warm-ups ----------
+  {id:'ptk', g:'warm', k:'Drill', t:'puh tuh kuh puh tuh kuh puh tuh kuh puh tuh kuh', src:'Classic drill', bpm:72, focus:['Lips','Tongue tip','Back of tongue'],
+   tip:'The classic "PTK" drill works the three places consonants are made: lips, tongue tip, back of the tongue. Keep the jaw almost still. Crisp and even first, speed later.'},
+  {id:'lipsw', g:'warm', k:'Drill', t:'buh buh buh buh muh muh muh muh puh puh puh puh', src:'Classic drill', bpm:80, focus:['Lips'],
+   tip:'Pop the lips cleanly on each one. Muh hums through the nose; buh and puh have a tiny burst of air.'},
+  {id:'tipw', g:'warm', k:'Drill', t:'lah lah lah lah tah tah tah tah dah dah dah dah nah nah nah nah', src:'Classic drill', bpm:84, focus:['Tongue tip','Loose jaw'],
+   tip:'Only the tongue tip moves, tapping the ridge behind the top teeth. Put a finger on your chin to keep the jaw still.'},
+  {id:'backw', g:'warm', k:'Drill', t:'gah kah gah kah gee kee gee kee goo koo goo koo', src:'Classic drill', bpm:76, focus:['Back of tongue'],
+   tip:'The back of the tongue lifts to the soft palate and releases. Great for freeing a tight tongue before singing.'},
+  {id:'jaww', g:'warm', k:'Drill', t:'yah yah yah yah nyah nyah nyah nyah', src:'Classic drill', bpm:76, focus:['Jaw','Tongue'],
+   tip:'Let the jaw drop loose and heavy on each "ah". The tongue makes the "y" and "ny", not the jaw.'},
+  {id:'vowelw', g:'warm', k:'Drill', t:'mee meh mah moh moo mee meh mah moh moo', src:'Classic drill', bpm:66, focus:['Vowels','Lips'],
+   tip:'Keep the same space inside the mouth and change only the tongue and lips. Every vowel stays pure, with no sliding.'},
+  {id:'mix', g:'warm', k:'Drill', t:'pah tah kah bah dah gah pah tah kah bah dah gah', src:'Classic drill', bpm:72, focus:['Voiced vs voiceless'],
+   tip:'P-T-K are voiceless (just air); B-D-G are voiced (hum). Feel your throat: it buzzes only on the second three.'},
+  {id:'nng', g:'warm', k:'Drill', t:'ming ning ming ning mung nung mung nung', src:'Classic drill', bpm:70, focus:['Nasal consonants'],
+   tip:'Hum each one into the nose and face. This is the "forward" feeling singers call the mask.'},
+
+  // ---------- P and B ----------
+  {id:'pw', g:'p', k:'Words', t:'pay pen pick pop push happy paper upper apple stop cup keep hope', src:'Word list', bpm:60, focus:['P start','P middle','P end'],
+   tip:'Start of word: a clear puff. Middle: lighter. End: close the lips and let a tiny release happen. Don\u{2019}t swallow it.'},
+  {id:'bw', g:'p', k:'Words', t:'bay bed big box bus baby rubber cabin robin cab rib rob tube', src:'Word list', bpm:60, focus:['B start','B middle','B end'],
+   tip:'B is voiced: you should feel a hum just before the lips open. At the end of a word, keep the voice on through the B.'},
+  {id:'pbp', g:'p', k:'Pairs', t:'pat/bat pea/bee pie/buy pull/bull pear/bear cap/cab rope/robe mop/mob', src:'Sound-alike pairs', bpm:56, focus:['P vs B'],
+   tip:'The only difference is the voice. Put two fingers on your throat: no buzz for P, buzz for B.'},
+  {id:'pph', g:'p', k:'Phrases', t:'Pick a pink pen. Pass the paper plate. Put the purple pillow up. A big blue box. Bring back the bread basket.', src:'Original', bpm:76, focus:['P','B'],
+   tip:'Read each phrase as if you mean it. Clear lips, relaxed jaw.'},
+  {id:'pp', g:'p', k:'Twister', t:'Pe-ter Pi-per picked a peck of pick-led pep-pers', src:'Traditional', bpm:72, focus:['P'],
+   tip:'Crisp, light p sounds. Don\u{2019}t spit. Think of a tiny puff at each p.'},
+  {id:'bb', g:'p', k:'Twister', t:'Bet-ty Bot-ter bought some but-ter, but the but-ter\u{2019}s bit-ter', src:'Traditional (first line)', bpm:68, focus:['B','T'],
+   tip:'B is voiced: hum a little before it pops. Tap the middle t lightly, American-style, like a quick d.'},
+  {id:'bug', g:'p', k:'Twister', t:'A big black bug bit a big black bear', src:'Traditional', bpm:68, focus:['B','K','G'],
+   tip:'"Big black bug" puts G and B side by side. Finish the g before the b.'},
+  {id:'buggy', g:'p', k:'Twister', t:'Rub-ber ba-by bug-gy bump-ers', src:'Traditional', bpm:64, focus:['B','R'],
+   tip:'Famously slippery. Say it five times slowly before you try it fast.'},
+  {id:'copper', g:'p', k:'Twister', t:'A pro-per cop-per cof-fee pot', src:'Traditional', bpm:68, focus:['P','K'],
+   tip:'P and K trade places all through this one. Keep them separate.'},
+  {id:'bbo', g:'p', k:'Twister', t:'Boun-cy ba-by bun-nies bump big blue bal-loons', src:'Original', bpm:72, focus:['B'],
+   tip:'Lips meet firmly but briefly. Keep your jaw soft.'},
+  {id:'ppass', g:'p', k:'Passage', t:'Before the big parade, Poppy packed a picnic basket: plump peaches, buttered bread, a pot of apple butter and a bottle of bubbly pink punch. By noon, the park was packed, and Poppy passed out plates to every person nearby.', src:'Original', bpm:76, focus:['P','B'],
+   tip:'Read it like a story, not a list. Every p and b clear, but the sentence flows.'},
+
+  // ---------- M and W ----------
+  {id:'mw', g:'m', k:'Words', t:'me moon make more mind summer lemon camera hammer room team dream calm', src:'Word list', bpm:60, focus:['M'],
+   tip:'M hums on the lips. At the end of words, let the hum ring for a moment.'},
+  {id:'ww', g:'m', k:'Words', t:'we way wind warm window away forward always sweet quiet twin wonder', src:'Word list', bpm:60, focus:['W'],
+   tip:'W starts with round lips that open into the vowel. Don\u{2019}t skip the rounding.'},
+  {id:'mm', g:'m', k:'Twister', t:'Ma-ma made ma-ny mi-ni muf-fins on Mon-day morn-ing', src:'Original', bpm:76, focus:['M'],
+   tip:'Feel the buzz on your lips at every m. That buzz is the same forward feeling you want when you sing.'},
+  {id:'woodchuck', g:'m', k:'Twister', t:'How much wood would a wood-chuck chuck if a wood-chuck could chuck wood', src:'Traditional', bpm:66, focus:['W','CH','K'],
+   tip:'Round the lips for every w and w-oo-d. Keep "wood" and "would" the same sound.'},
+  {id:'witch', g:'m', k:'Twister', t:'Which witch is which? Which witch is which?', src:'Traditional', bpm:66, focus:['W','CH'],
+   tip:'Round lips for w, quick "tch" at the end. Don\u{2019}t let it become "wish".'},
+  {id:'swan', g:'m', k:'Twister', t:'Swan swam o-ver the sea. Swim, swan, swim!', src:'Traditional', bpm:68, focus:['SW','M'],
+   tip:'The "sw" blend: s first, then round the lips fast.'},
+  {id:'wendy', g:'m', k:'Twister', t:'Wen-dy wise-ly wore white wool on Wednes-day', src:'Original', bpm:72, focus:['W'],
+   tip:'Every w gets its own lip rounding, even when you speed up.'},
+  {id:'mpass', g:'m', k:'Passage', t:'Every Wednesday morning, my mom makes warm muffins with melted butter. We wait by the window while the whole room fills with the smell of cinnamon, and my little brother always wants the one in the middle.', src:'Original', bpm:76, focus:['M','W'],
+   tip:'Let the m sounds hum and the w sounds round. Warm, relaxed voice.'},
+
+  // ---------- T and D ----------
+  {id:'tw', g:'t', k:'Words', t:'top time tell ten turn later water better city cat sit light start', src:'Word list', bpm:60, focus:['T start','T middle','T end'],
+   tip:'Americans tap a middle t like a quick d ("wader" for water). At the start and end, keep it a clean t.'},
+  {id:'dw', g:'t', k:'Words', t:'day did door down deep ladder under hidden needle bed good hand world', src:'Word list', bpm:60, focus:['D'],
+   tip:'D is a voiced tap of the tongue tip. At the end of a word, keep it: "good", not "goo".'},
+  {id:'tdp', g:'t', k:'Pairs', t:'tie/die ten/den town/down tear/dear seat/seed write/ride coat/code bat/bad', src:'Sound-alike pairs', bpm:56, focus:['T vs D'],
+   tip:'Same tongue position, different voice. At word ends, a vowel before D is a little longer ("seed" vs "seat").'},
+  {id:'tph', g:'t', k:'Phrases', t:'Take the train to town today. Don\u{2019}t touch the tiny teacup. Did Dad dry the dishes? Ten dollars to the door.', src:'Original', bpm:76, focus:['T','D'],
+   tip:'Clean tongue-tip taps. Keep the jaw loose.'},
+  {id:'tott', g:'t', k:'Twister', t:'The tip of the tongue, the teeth, the lips', src:'Traditional drama warm-up', bpm:72, focus:['Tongue tip','Lips'],
+   tip:'Actors say this line before shows. Say it with exaggerated clarity, then at normal speed with the same clarity.'},
+  {id:'ten', g:'t', k:'Twister', t:'Ten ti-ny tur-tles tip-toed to To-le-do', src:'Original', bpm:72, focus:['T','D'],
+   tip:'Clean t at the start of words, softer t in the middle. Let the d at the end actually happen.'},
+  {id:'twine', g:'t', k:'Twister', t:'Tie twine to three tree twigs', src:'Traditional', bpm:66, focus:['T','TW','TH'],
+   tip:'"Tw" and "thr" are close cousins. Keep "twine", "three" and "tree" all different.'},
+  {id:'fred', g:'t', k:'Twister', t:'Fred fed Ted bread, and Ted fed Fred bread', src:'Traditional', bpm:70, focus:['D','F','R'],
+   tip:'Every word ends in a d. Finish each one before the next word starts.'},
+  {id:'double', g:'t', k:'Twister', t:'Dou-ble bub-ble gum bub-bles dou-ble', src:'Traditional', bpm:70, focus:['D','B'],
+   tip:'D and B alternate quickly. Stay light on the lips and tongue.'},
+  {id:'tpass', g:'t', k:'Passage', t:'Today the tennis team traveled to the tournament downtown. Tyler tied his shoes too tight, Daisy forgot her water bottle, and the coach told them all to take a deep breath and do their best.', src:'Original', bpm:76, focus:['T','D'],
+   tip:'Notice the middle t\u{2019}s ("water", "bottle") tap softly, while start and end t\u{2019}s stay clear.'},
+
+  // ---------- N and NG ----------
+  {id:'nw', g:'n', k:'Words', t:'no night need new name dinner many honey running sun rain green seven', src:'Word list', bpm:60, focus:['N'],
+   tip:'N hums through the nose with the tongue tip up. At the end of words, let it ring.'},
+  {id:'ngw', g:'n', k:'Words', t:'sing song ring long thing singer hanging bringing young morning spring evening', src:'Word list', bpm:60, focus:['NG'],
+   tip:'NG is made with the back of the tongue, not the tip. Don\u{2019}t add a hard g after it: "sing", not "sing-g".'},
+  {id:'nngp', g:'n', k:'Pairs', t:'sin/sing ran/rang ban/bang thin/thing win/wing ton/tongue', src:'Sound-alike pairs', bpm:56, focus:['N vs NG'],
+   tip:'Tongue tip for N, back of the tongue for NG. Singers need both clear on long notes.'},
+  {id:'uny', g:'n', k:'Twister', t:'U-nique New York, u-nique New York, you know you need u-nique New York', src:'Traditional', bpm:68, focus:['N','Y'],
+   tip:'The "ny" and "yu" sounds sit right next to each other. Keep the tongue tip down behind the bottom teeth for the y.'},
+  {id:'nine', g:'n', k:'Twister', t:'Nine nice night nurs-es nurs-ing nice-ly', src:'Traditional', bpm:68, focus:['N','S'],
+   tip:'Lots of n\u{2019}s. Keep them light so they don\u{2019}t get stuck in your nose.'},
+  {id:'sing1', g:'n', k:'Twister', t:'Sing-ing, ring-ing, bring-ing spring-time morn-ing songs', src:'Original', bpm:68, focus:['NG'],
+   tip:'Every "-ing" ends softly at the back of the tongue. No extra g.'},
+  {id:'npass', g:'n', k:'Passage', t:'Every evening in the spring, the neighbors bring their instruments and sing on the lawn. Nina plays the banjo, Nathan hums along, and by nine o\u{2019}clock the singing is ringing down the whole street.', src:'Original', bpm:76, focus:['N','NG'],
+   tip:'Hum the n and ng sounds a little longer than usual. Feel the vibration in your face.'},
+
+  // ---------- L ----------
+  {id:'lw', g:'l', k:'Words', t:'light love late leaf lucky yellow color hello follow ball feel smile bottle', src:'Word list', bpm:60, focus:['Light L','Dark L'],
+   tip:'Start of word: a light L with the tongue tip forward. End of word ("ball", "feel"): a darker L. Keep it quick either way.'},
+  {id:'lph', g:'l', k:'Phrases', t:'Lovely little lemon leaves. Let\u{2019}s leave a little later. Hold the yellow balloon. Lots of loud laughter.', src:'Original', bpm:76, focus:['L'],
+   tip:'The tongue tip lifts and drops quickly. The jaw stays still.'},
+  {id:'rl1', g:'l', k:'Twister', t:'Red lea-ther, yel-low lea-ther, red lea-ther, yel-low lea-ther', src:'Traditional', bpm:72, focus:['L','R'],
+   tip:'L is a tongue-tip tap; R keeps the tip free. Don\u{2019}t let them blur together.'},
+  {id:'lesser', g:'l', k:'Twister', t:'Less-er leath-er nev-er weath-ered wet-ter weath-er bet-ter', src:'Traditional', bpm:64, focus:['L','TH','W'],
+   tip:'A mouthful. Go slowly: "lesser leather" first, then add a word at a time.'},
+  {id:'lily', g:'l', k:'Twister', t:'Li-ly light-ly licked the lem-on lol-li-pop', src:'Original', bpm:76, focus:['L'],
+   tip:'Every L is a quick lift of the tongue tip. Keep the lips relaxed.'},
+  {id:'eleven', g:'l', k:'Twister', t:'E-lev-en be-nev-o-lent el-e-phants', src:'Traditional', bpm:66, focus:['L','V','N'],
+   tip:'Lots of syllables. Give each one its own beat before speeding up.'},
+  {id:'lpass', g:'l', k:'Passage', t:'Lila loves long walks along the lake. She likes to listen to the little waves roll in, look for yellow leaves, and let the cool breeze blow all her worries away until the lights come on at the lodge.', src:'Original', bpm:76, focus:['L'],
+   tip:'Keep every L light and quick so the sentences float.'},
+
+  // ---------- K and G ----------
+  {id:'kw', g:'k', k:'Words', t:'key cat cold kind quick pocket bacon taken lucky back like work speak', src:'Word list', bpm:60, focus:['K'],
+   tip:'K is a click at the back of the tongue. At the end of a word, let it release so it can be heard.'},
+  {id:'gw', g:'k', k:'Words', t:'go girl game good give bigger sugar again tiger big dog bag leg', src:'Word list', bpm:60, focus:['G'],
+   tip:'G is K with voice. Keep the throat relaxed; the tongue does the work.'},
+  {id:'kgp', g:'k', k:'Pairs', t:'coat/goat cap/gap curl/girl could/good back/bag pick/pig duck/dug', src:'Sound-alike pairs', bpm:56, focus:['K vs G'],
+   tip:'Throat check again: no buzz on K, buzz on G.'},
+  {id:'gb', g:'k', k:'Twister', t:'Good blood, bad blood, good blood, bad blood', src:'Traditional', bpm:72, focus:['G','B','D'],
+   tip:'The g and the b are far apart in the mouth. Make each one distinct, and finish every d.'},
+  {id:'greek', g:'k', k:'Twister', t:'Greek grapes, Greek grapes, Greek grapes', src:'Traditional', bpm:76, focus:['GR','P'],
+   tip:'The "gr" cluster is tricky. Don\u{2019}t skip the g or swallow the p at the end.'},
+  {id:'kitty', g:'k', k:'Twister', t:'Kit-ty caught the kit-ten in the kitch-en', src:'Traditional', bpm:70, focus:['K','CH'],
+   tip:'K at the back, CH at the front. They alternate quickly.'},
+  {id:'canner', g:'k', k:'Twister', t:'Can you can a can as a can-ner can can a can?', src:'Traditional', bpm:64, focus:['K','N'],
+   tip:'It\u{2019}s all about rhythm. Tap it out on the beat before you speed it up.'},
+  {id:'kate', g:'k', k:'Twister', t:'Clev-er Kate kept cool cake in a cold cool-er', src:'Original', bpm:72, focus:['K'],
+   tip:'A clean little click at the back each time. Don\u{2019}t tighten the throat to make it.'},
+  {id:'kpass', g:'k', k:'Passage', t:'Grandma keeps a cookie jar on the kitchen counter. Every weekend we bake chocolate chip cookies, sugar cookies and ginger cake, and the kids can pick one to take home in a paper bag.', src:'Original', bpm:76, focus:['K','G'],
+   tip:'The k and g sounds are at the back of the mouth. Keep the front relaxed and smiling.'},
+
+  // ---------- S and Z ----------
+  {id:'sw', g:'s', k:'Words', t:'see sun sister song story lesson whisper basket answer yes miss nice class', src:'Word list', bpm:60, focus:['S'],
+   tip:'Tongue tip near the ridge, a narrow stream of air. Keep it short; long hisses sound harsh on a mic.'},
+  {id:'zw', g:'s', k:'Words', t:'zoo zero zip busy music easy lazy dizzy is has was nose these', src:'Word list', bpm:60, focus:['Z'],
+   tip:'Z is a buzzing S. Many words spelled with S actually end in Z: "is", "has", "was".'},
+  {id:'szp', g:'s', k:'Pairs', t:'sip/zip sue/zoo bus/buzz ice/eyes price/prize place/plays race/raise', src:'Sound-alike pairs', bpm:56, focus:['S vs Z'],
+   tip:'Hiss for S, buzz for Z. Feel the difference with a hand on your throat.'},
+  {id:'she', g:'s', k:'Twister', t:'She sells sea-shells by the sea-shore', src:'Traditional', bpm:68, focus:['S','SH'],
+   tip:'S: tongue tip near the ridge, lips spread. SH: lips round slightly and the tongue pulls back. Feel the switch.'},
+  {id:'snails', g:'s', k:'Twister', t:'Six slim-y snails sailed si-lent-ly', src:'Traditional', bpm:68, focus:['S','SL'],
+   tip:'Short, clean s sounds. Don\u{2019}t let them turn into "sh".'},
+  {id:'mixed', g:'s', k:'Twister', t:'Mixed bis-cuits, mixed bis-cuits, mixed bis-cuits', src:'Traditional', bpm:64, focus:['KS','KT','S'],
+   tip:'"Mixed" ends in k-s-t. All three should be there, even fast.'},
+  {id:'specific', g:'s', k:'Twister', t:'Spe-cif-ic Pa-cif-ic, spe-cif-ic Pa-cif-ic', src:'Traditional', bpm:62, focus:['S','P','F'],
+   tip:'Don\u{2019}t say "pacific" twice. The first word starts with "sp".'},
+  {id:'sally', g:'s', k:'Twister', t:'Sal-ly\u{2019}s sis-ter Su-sie sings sweet songs on Sun-days', src:'Original', bpm:72, focus:['S','Z'],
+   tip:'Keep s sounds short. A long hiss sounds harsh on a microphone, especially when you sing.'},
+  {id:'spass', g:'s', k:'Passage', t:'Last summer my sister and I set up a small stand selling sweet iced tea. We sat in the sun for hours, sang silly songs to pass the time, and saved every single penny for a surprise trip to the seaside.', src:'Original', bpm:76, focus:['S','Z'],
+   tip:'Aim for short, soft s sounds. Notice which s\u{2019}s are actually buzzy z\u{2019}s ("songs", "hours").'},
+
+  // ---------- SH, CH, J ----------
+  {id:'shw', g:'sh', k:'Words', t:'she shoe shine shape sugar ocean nation washing fishing wish cash push brush', src:'Word list', bpm:60, focus:['SH'],
+   tip:'Lips slightly rounded and pushed forward, tongue pulled back from the teeth.'},
+  {id:'chw', g:'sh', k:'Words', t:'chair cheese child choose kitchen teacher nature picture much each watch lunch', src:'Word list', bpm:60, focus:['CH'],
+   tip:'CH is T and SH glued together: a tiny stop, then a hush.'},
+  {id:'jw', g:'sh', k:'Words', t:'jump just joy gentle jacket magic danger soldier major page edge large bridge', src:'Word list', bpm:60, focus:['J'],
+   tip:'J is CH with voice: D and ZH glued together.'},
+  {id:'shp', g:'sh', k:'Pairs', t:'sip/ship sea/she save/shave sock/shock chip/ship cheap/sheep chin/gin rich/ridge', src:'Sound-alike pairs', bpm:56, focus:['S vs SH','CH vs SH','CH vs J'],
+   tip:'Three families side by side. Go slowly and let each one be clearly itself.'},
+  {id:'sixth', g:'sh', k:'Twister', t:'The sixth sick sheik\u{2019}s sixth sheep\u{2019}s sick', src:'Traditional', bpm:52, focus:['S','SH','TH','K'],
+   tip:'Famously one of the hardest in English. Go very slowly first: "sixth" has k-s-th all in a row.'},
+  {id:'ship', g:'sh', k:'Twister', t:'Cheap ship trip, cheap ship trip, cheap ship trip', src:'Traditional', bpm:64, focus:['CH','SH','P'],
+   tip:'CH then SH then TR. Three different starts in a row.'},
+  {id:'shipshape', g:'sh', k:'Twister', t:'Sure the ship\u{2019}s ship-shape, sir', src:'Traditional', bpm:64, focus:['SH','S'],
+   tip:'SH and S swap back and forth. Keep them distinct.'},
+  {id:'jelly', g:'sh', k:'Twister', t:'Gen-tle Jen-ny juggled jars of jel-ly', src:'Original', bpm:70, focus:['J'],
+   tip:'Voiced and bouncy. Keep your jaw loose.'},
+  {id:'shpass', g:'sh', k:'Passage', t:'Charlotte chose a cherry sherbet from the shop at the beach, then rushed to show her brother the shiny shells she had just found. Her cheeks were pink, her shoes were full of sand, and she had never been so cheerful.', src:'Original', bpm:76, focus:['SH','CH'],
+   tip:'Hear the difference between the hush of SH and the little stop in CH.'},
+
+  // ---------- R ----------
+  {id:'rw', g:'r', k:'Words', t:'red run road right really carry sorry around story car her near more', src:'Word list', bpm:60, focus:['R start','R middle','R end'],
+   tip:'Tongue tip floats; it never touches. At the end of words, a light R. In singing, stay on the vowel and add the R late.'},
+  {id:'rlp', g:'r', k:'Pairs', t:'right/light road/load rock/lock read/lead fry/fly pray/play crown/clown', src:'Sound-alike pairs', bpm:56, focus:['R vs L'],
+   tip:'L: the tip touches behind the teeth. R: the tip floats. Alternate cleanly.'},
+  {id:'lorry', g:'r', k:'Twister', t:'Red lor-ry, yel-low lor-ry, red lor-ry, yel-low lor-ry', src:'Traditional', bpm:68, focus:['R','L'],
+   tip:'R floats, L touches. Alternate cleanly without blurring.'},
+  {id:'rascal', g:'r', k:'Twister', t:'Round the rug-ged rock the rag-ged ras-cal ran', src:'Traditional', bpm:68, focus:['R'],
+   tip:'Light, quick R\u{2019}s. Don\u{2019}t let them get heavy or pinched.'},
+  {id:'rural', g:'r', k:'Twister', t:'Tru-ly ru-ral, tru-ly ru-ral, tru-ly ru-ral', src:'Traditional', bpm:60, focus:['R','L'],
+   tip:'Deceptively hard. Very slowly first; every R and L has to be there.'},
+  {id:'rolling', g:'r', k:'Twister', t:'Roll-ing red wag-ons rat-tle round the rail-road', src:'Original', bpm:72, focus:['R'],
+   tip:'Keep the R light and quick. In singing, a heavy American R pinches the tone.'},
+  {id:'rpass', g:'r', k:'Passage', t:'Rory raced around the corner on her rusty red bicycle, right past the bakery and the river bridge, and arrived at rehearsal three minutes early. Her friends were already warming up, reading their parts, and ready to run the first number.', src:'Original', bpm:76, focus:['R'],
+   tip:'Aim for light, fast R\u{2019}s. Notice how many R\u{2019}s you can soften while every word stays clear.'},
+
+  // ---------- TH ----------
+  {id:'thw', g:'th', k:'Words', t:'think thank three thumb thin birthday nothing author mouth both earth with truth', src:'Word list', bpm:60, focus:['Voiceless TH'],
+   tip:'Tongue tip peeks out between the teeth, just air, no voice.'},
+  {id:'dhw', g:'th', k:'Words', t:'this that the they there mother father weather together other breathe smooth with', src:'Word list', bpm:60, focus:['Voiced TH'],
+   tip:'Same tongue position, now with voice: a gentle buzz on the tongue tip.'},
+  {id:'thp', g:'th', k:'Pairs', t:'thin/tin three/tree thank/tank thought/taught then/den they/day both/boat', src:'Sound-alike pairs', bpm:56, focus:['TH vs T','TH vs D'],
+   tip:'Don\u{2019}t let TH turn into T or D when you speed up.'},
+  {id:'three', g:'th', k:'Twister', t:'Three free throws, three free throws, three free throws', src:'Traditional', bpm:72, focus:['TH','F'],
+   tip:'TH: tongue between the teeth. F: top teeth on the bottom lip. Close cousins, different places.'},
+  {id:'thin', g:'th', k:'Twister', t:'Thin sticks, thick bricks, thin sticks, thick bricks', src:'Traditional', bpm:64, focus:['TH','S','K'],
+   tip:'The endings matter: "sticks" and "bricks" end in k-s.'},
+  {id:'thirty', g:'th', k:'Twister', t:'Thir-ty thin think-ers thought three thought-ful thoughts', src:'Original', bpm:64, focus:['TH'],
+   tip:'Keep every th a th, even when you get faster.'},
+  {id:'thpass', g:'th', k:'Passage', t:'On Thursday, the three of them gathered at their grandmother\u{2019}s house to throw her a birthday party. They thought through everything together: the theme, the thank-you notes, and the thick chocolate cake that nobody could stop thinking about.', src:'Original', bpm:76, focus:['TH'],
+   tip:'Notice which th\u{2019}s are voiced ("the", "them", "together") and which are just air ("three", "thought").'},
+
+  // ---------- F and V ----------
+  {id:'fw', g:'f', k:'Words', t:'fun fast feel find phone coffee after sofa laughing off leaf life enough', src:'Word list', bpm:60, focus:['F'],
+   tip:'Top teeth rest lightly on the bottom lip. Just air.'},
+  {id:'vw', g:'f', k:'Words', t:'very voice view van visit river never over seven love have move give', src:'Word list', bpm:60, focus:['V'],
+   tip:'V is F with voice: feel your bottom lip buzz. Don\u{2019}t let it become a B.'},
+  {id:'fvp', g:'f', k:'Pairs', t:'fan/van fine/vine few/view safe/save leaf/leave half/have ferry/very', src:'Sound-alike pairs', bpm:56, focus:['F vs V'],
+   tip:'Air for F, buzz for V.'},
+  {id:'fish', g:'f', k:'Twister', t:'Fresh fried fish, fish fresh fried, fried fish fresh', src:'Traditional', bpm:66, focus:['F','SH'],
+   tip:'F then SH, over and over. Lips do the F, then round for the SH.'},
+  {id:'four', g:'f', k:'Twister', t:'Four fine fresh fish for you', src:'Traditional', bpm:68, focus:['F'],
+   tip:'Short and sweet. Crisp F\u{2019}s without puffing too much air.'},
+  {id:'viv', g:'f', k:'Twister', t:'Viv-i-an val-ues ver-y viv-id vi-o-let vel-vet', src:'Original', bpm:72, focus:['V'],
+   tip:'Feel the lip buzz on every v.'},
+  {id:'fpass', g:'f', k:'Passage', t:'Every Friday, Vivian and her friends visit the farmers market. They find fresh flowers, five kinds of fruit and a violin player who performs his favorite folk songs, and they never leave without a fresh loaf of bread.', src:'Original', bpm:76, focus:['F','V'],
+   tip:'Air for f, buzz for v. Keep the lips relaxed so it doesn\u{2019}t get puffy.'},
+
+  // ---------- vowels ----------
+  {id:'ee_ih', g:'vowel', k:'Pairs', t:'sheep/ship seat/sit leave/live feel/fill heat/hit green/grin', src:'Sound-alike pairs', bpm:56, focus:['/i/ vs /\u{26A}/'],
+   tip:'"Ee" is tighter and longer; "ih" is relaxed and short. Singers must keep these different on long notes.'},
+  {id:'eh_a', g:'vowel', k:'Pairs', t:'bed/bad said/sad men/man pen/pan set/sat head/had', src:'Sound-alike pairs', bpm:56, focus:['/\u{25B}/ vs /\u{E6}/'],
+   tip:'"A" as in "cat" is wider and brighter. On high notes it often needs to lean toward "eh".'},
+  {id:'oo_uh', g:'vowel', k:'Pairs', t:'pool/pull fool/full Luke/look food/foot suit/soot', src:'Sound-alike pairs', bpm:56, focus:['/u/ vs /\u{28A}/'],
+   tip:'"Oo" is rounded and long; the second is relaxed and short.'},
+  {id:'diph', g:'vowel', k:'Words', t:'day night boy now go my say how toy low time face out', src:'Word list', bpm:56, focus:['Diphthongs'],
+   tip:'Each of these is two vowels. Say them slowly and feel the slide at the end. When singing, hold the first part.'},
+  {id:'how', g:'vowel', k:'Twister', t:'How now, brown cow, how now, brown cow', src:'Traditional elocution drill', bpm:60, focus:['Diphthong /a\u{28A}/'],
+   tip:'"Ow" is ah + oo. Stay on the "ah" and add the "oo" only at the very end.'},
+  {id:'toy', g:'vowel', k:'Twister', t:'Toy boat, toy boat, toy boat, toy boat', src:'Traditional', bpm:72, focus:['Diphthongs','T'],
+   tip:'Two different diphthongs side by side: "oy" and "oh". Keep them separate when you speed up.'},
+  {id:'aunt', g:'vowel', k:'Twister', t:'Al-ways eat an ap-ple each ev-en-ing, An-na', src:'Original', bpm:64, focus:['Vowels','Linking'],
+   tip:'So many words start with vowels. Link them smoothly ("eat-an-apple") without a hard catch in the throat.'},
+  {id:'vpass', g:'vowel', k:'Passage', t:'Our old oak tree stands alone at the edge of an open field. Every autumn its orange leaves fall in the evening air, and I always imagine it has been waiting all year for that one moment.', src:'Original', bpm:70, focus:['Vowel starts','Linking'],
+   tip:'Many words start with vowels. Glide into each one from the word before, with no hard throat catch.'},
+
+  // ---------- endings and clusters ----------
+  {id:'endw', g:'end', k:'Words', t:'asked texts months strengths sixths clothes lists desks wasps helped world', src:'Word list', bpm:52, focus:['Consonant clusters'],
+   tip:'Slow down and let every consonant exist. "Asked" is a-s-k-t; "months" is n-th-s.'},
+  {id:'cats', g:'end', k:'Twister', t:'The cats\u{2019} hats and the dogs\u{2019} logs and the frogs\u{2019} clogs', src:'Original', bpm:68, focus:['Final consonants'],
+   tip:'Finish every ending. Lost endings are the #1 reason sung words are hard to understand.'},
+  {id:'irish', g:'end', k:'Twister', t:'I-rish wrist-watch, I-rish wrist-watch', src:'Traditional', bpm:56, focus:['R','SH','CH'],
+   tip:'Take it slowly. Speed only when every sound is still there.'},
+  {id:'knapsack', g:'end', k:'Twister', t:'Knap-sack straps, knap-sack straps, knap-sack straps', src:'Traditional', bpm:62, focus:['PS','KS','STR'],
+   tip:'"Straps" packs s-t-r at the start and p-s at the end. Every sound counts.'},
+  {id:'pad', g:'end', k:'Twister', t:'Pad kid poured curd pulled cod', src:'Traditional', bpm:56, focus:['P','K','D'],
+   tip:'Short words, all hard stops. Researchers once called this one of the hardest in English.'},
+  {id:'endpass', g:'end', k:'Passage', t:'She packed her books, grabbed her headphones, and walked past the old red post box. The wind twisted the leaves. She stopped, smiled, and texted her best friend just two words: almost there.', src:'Original', bpm:70, focus:['Final consonants'],
+   tip:'Past-tense endings: "packed" ends in t, "grabbed" in d. Let each one be heard.'},
+
+  // ---------- speed builders ----------
+  {id:'sp1', g:'speed', k:'Speed', t:'Red leather, yellow leather. Unique New York. Toy boat. Good blood, bad blood. Three free throws.', src:'Traditional mix', bpm:72, focus:['Everything'],
+   tip:'A classic chain. Once it\u{2019}s clean at a slow speed, let the speed ladder push you faster each round.'},
+  {id:'sp2', g:'speed', k:'Speed', t:'Peter Piper, Betty Botter, big black bug. She sells seashells. Which witch is which?', src:'Traditional mix', bpm:72, focus:['Lips','S','W'],
+   tip:'Switch between lips, tongue tip and back of the tongue without losing clarity.'},
+  {id:'sp3', g:'speed', k:'Speed', t:'Crisp clear consonants carry clever quick words clean across crowded concert halls', src:'Original', bpm:72, focus:['K','Clusters'],
+   tip:'Almost every word has a cluster. This is your final test of the day.'},
+  {id:'sp4', g:'speed', k:'Speed', t:'Tip of the tongue, teeth and lips: tap, tick, pop, click, buzz, hum, hiss, hush', src:'Original', bpm:76, focus:['Every place'],
+   tip:'Each word uses a different place in the mouth. Make every one sound like what it says.'},
+
+  // ---------- sung lines ----------
+  {id:'night', g:'sing', k:'Sung', t:'Night and light, so bright to-night', src:'Original (diphthong practice)', bpm:60, focus:['Diphthong /a\u{26A}/'],
+   tip:'Sing it on one note. On "night", hold "nah" for most of the note and add "-eet" at the very end: "naaaah-eet".'},
+  {id:'end', g:'sing', k:'Sung', t:'Hold the note, then land the end', src:'Original (final consonants)', bpm:60, focus:['Final consonants','Timing'],
+   tip:'Sing on one note and place the final d and t exactly on the next beat. Singers call this "landing the consonant".'},
+  {id:'love', g:'sing', k:'Sung', t:'Your love is all I need to feel com-plete', src:'Original (sung vowels)', bpm:56, focus:['Pure vowels'],
+   tip:'Sing it slowly on a comfortable note. Keep every vowel pure and let the consonants be quick taps between them.'},
+  {id:'river', g:'sing', k:'Sung', t:'O-ver the ri-ver and far a-way', src:'Original (R and linking)', bpm:56, focus:['Light R','Linking'],
+   tip:'Stay on the vowels; add each R late and light. Link "far away" smoothly.'},
+  {id:'mmm', g:'sing', k:'Sung', t:'Mmm, may my mel-o-dy move you', src:'Original (hum into vowels)', bpm:56, focus:['M','Forward buzz'],
+   tip:'Hum the m\u{2019}s on pitch before each vowel. Feel the buzz carry into the words.'}
+];
+
+D.forEach(d => { const g = GROUPS.find(x => x[0] === d.g); d.c = g[2]; d.gname = g[1]; });
+
+const VOWELS = [
+  ['i', 'see, me, team', 'Tongue high and forward, lips a little spread. In singing, keep space behind it so it doesn\u{2019}t get thin.', 'see'],
+  ['\u{26A}', 'sit, big, with', 'A relaxed, shorter "ee". Don\u{2019}t let it spread wide on high notes.', 'sit'],
+  ['e\u{26A}', 'say, day, great', 'Diphthong: sing on "eh" and add "ee" only at the end.', 'day'],
+  ['\u{25B}', 'set, bed, never', 'Open and forward. A great belting vowel.', 'bed'],
+  ['\u{E6}', 'cat, sat, hand', 'Very bright. On high notes, shade it toward "eh" to keep it from getting harsh.', 'cat'],
+  ['\u{251}', 'father, hot, calm', 'The most open vowel: jaw dropped, tongue low and relaxed.', 'father'],
+  ['\u{254}', 'saw, thought, all', 'Rounded "aw". Many Americans say it like "ah"; singers often keep a little rounding.', 'saw'],
+  ['o\u{28A}', 'so, go, home', 'Diphthong: sing on "oh" and close to "oo" only at the end.', 'go'],
+  ['\u{28A}', 'book, good, put', 'A relaxed, shorter "oo".', 'book'],
+  ['u', 'too, you, blue', 'Lips rounded, tongue high and back. Keep the lips soft, not tight.', 'blue'],
+  ['\u{28C}', 'cup, love, but', 'Short and neutral. In songs, "love" often opens toward "ah".', 'love'],
+  ['\u{259}', 'about, sofa, the', 'The unstressed "uh". Don\u{2019}t hold it on long notes; open it a little.', 'about'],
+  ['\u{25D}', 'her, bird, word', 'The American R-vowel. For singing, keep it light: start closer to "uh" and add R late.', 'bird'],
+  ['a\u{26A}', 'my, night, time', 'Diphthong: stay on "ah", add "ee" at the very end.', 'night'],
+  ['a\u{28A}', 'now, how, out', 'Diphthong: stay on "ah", add "oo" at the very end.', 'now'],
+  ['\u{254}\u{26A}', 'boy, joy, voice', 'Diphthong: stay on "aw", add "ee" at the end.', 'boy']
+];
+const RULES = [
+  ['Sing on the vowels, tap the consonants.', 'Vowels carry the tone, so they get almost all the time. Consonants are quick and precise, placed right at the edges of the notes.'],
+  ['Diphthongs: stay on the first vowel.', 'Words like "night", "day" and "go" have two vowels. Hold the first one and add the second only at the very end of the note.'],
+  ['Keep vowels pure.', 'Don\u{2019}t let a vowel slide into another sound while you hold it. Edith Skinner\u{2019}s stage-speech method builds exactly this habit in speaking.'],
+  ['Finish your final consonants.', 'Endings like t, d, k, s carry the meaning. Put them exactly on time, often right on the next beat or rest.'],
+  ['Voiced consonants can sing.', 'M, n, ng, l, v and z carry pitch. You can hum them for a moment before the vowel for a smooth, connected line.'],
+  ['Link words smoothly.', 'When a word starts with a vowel ("and I", "all of"), glide into it from the word before instead of making a hard catch in the throat.'],
+  ['Match the style.', 'Pop and R&B sound conversational: softer R\u{2019}s and relaxed consonants, but every word still understood. Musical theatre and classical are crisper and more exact. Jazz can bend and slur sounds on purpose.'],
+  ['Lighten the American R.', 'A long, heavy R pinches the tone. Sing on the vowel before it and add a short, light R at the end.'],
+  ['Relax the jaw.', 'A tight jaw muffles words and tone. Let the tongue and lips do the precise work.'],
+  ['Record and listen.', 'You can\u{2019}t hear your own diction clearly while you sing. Record a line, play it back, and check that a stranger could understand every word.']
+];
+
+/* ---------- storage ---------- */
+const dk = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const TODAY = dk(new Date());
+let DB = {};
+try { DB = JSON.parse(localStorage.getItem('diction-studio') || '{}') || {}; } catch (e) { DB = {}; }
+DB.best = DB.best || {}; DB.count = DB.count || {}; DB.days = DB.days || {};
+const save = () => { try { localStorage.setItem('diction-studio', JSON.stringify(DB)); } catch (e) {} };
+const doneToday = id => !!(DB.days[TODAY] || {})[id];
+
+/* ---------- state ---------- */
+const S = { cur:D[0], playing:false };
+
+/* ---------- list ---------- */
+function buildList() {
+  const box = $('list'); box.innerHTML = '';
+  GROUPS.forEach(([g, name, c]) => {
+    const items = D.filter(d => d.g === g), open = S.open === g;
+    const done = items.filter(d => doneToday(d.id)).length;
+    const h = document.createElement('button'); h.className = 'gbtn'; h.style.setProperty('--c', c); h.setAttribute('aria-expanded', open);
+    h.innerHTML = `<span><i></i>${name}</span><small>${done ? done + '/' : ''}${items.length} ${open ? '\u{25BE}' : '\u{25B8}'}</small>`;
+    h.onclick = () => { S.open = open ? null : g; buildList(); };
+    box.appendChild(h);
+    if (!open) return;
+    items.forEach(d => {
+      const b = document.createElement('button'); b.className = 'item'; b.style.setProperty('--c', c); b.dataset.id = d.id;
+      b.setAttribute('aria-pressed', d === S.cur);
+      const plain = d.t.replace(/-/g, '').replace(/\//g, ' / ');
+      b.innerHTML = `<span class="tick ${doneToday(d.id) ? 'on' : ''}">${doneToday(d.id) ? '\u{2713}' : ''}</span><span><span class="kind">${d.k}</span><b>${plain.length > 44 ? plain.slice(0, 42) + '\u{2026}' : plain}</b></span>`;
+      b.onclick = ev => {
+        if (ev.target.closest('.tick')) { const day = (DB.days[TODAY] = DB.days[TODAY] || {}); if (day[d.id]) delete day[d.id]; else day[d.id] = true; save(); buildList(); buildToday(); return; }
+        select(d);
+      };
+      box.appendChild(b);
+    });
+  });
+}
+function syllables(t, k) {
+  const out = [];
+  if (k === 'Words' || k === 'Pairs') { t.split(' ').forEach(w => out.push({text:w.replace('/', ' / '), end:true})); return out; }
+  t.split(' ').forEach((w, wi) => { const parts = w.split('-'); parts.forEach((p, pi) => out.push({text:p, end:pi === parts.length - 1})); });
+  return out;
+}
+function select(d) {
+  stopRead();
+  S.cur = d; S.open = d.g;
+  document.querySelectorAll('.item').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === d.id));
+  $('drillPanel').style.setProperty('--c', d.c);
+  $('dPill').textContent = d.gname + ' \u{B7} ' + d.k; $('dPill').style.setProperty('--c', d.c);
+  $('dSrc').textContent = d.src;
+  const sy = syllables(d.t, d.k);
+  $('dText').className = 'big' + (d.k === 'Words' || d.k === 'Pairs' ? ' list' : d.k === 'Passage' ? ' passage' : '');
+  $('dText').innerHTML = sy.map((s, i) => `<span class="sy" data-i="${i}">${s.text}</span>${s.end ? ' ' : ''}`).join('');
+  $('dFocus').innerHTML = d.focus.map(f => `<span class="fchip">${f}</span>`).join('');
+  $('dTip').innerHTML = `<b>How:</b> ${d.tip}`;
+  const start = DB.best[d.id] ? Math.max(d.bpm, DB.best[d.id]) : d.bpm;
+  $('bpm').value = start; $('bpmOut').textContent = start + ' BPM';
+  $('bestBpm').textContent = DB.best[d.id] ? DB.best[d.id] + ' BPM' : '\u{2013}';
+  $('doneCount').textContent = DB.count[d.id] || 0;
+  DB.time = DB.time || {}; $('bestTime').textContent = DB.time[d.id] ? DB.time[d.id].toFixed(1) + ' s' : '\u{2013}';
+  stopPace(true);
+  $('status').textContent = d.k === 'Words' ? 'Read to the beat: one word per click.' : d.k === 'Pairs' ? 'Read to the beat: one pair every two clicks. Or read at your own pace.' : 'Read to the beat (two syllables per click) or at your own pace with the stopwatch.';
+  $('player').hidden = true;
+}
+
+/* ---------- audio: metronome ---------- */
+let ac = null;
+function ensureAudio() { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); }
+function click(t, accent) {
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.frequency.value = accent ? 1500 : 1000; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(accent ? .3 : .18, t + .002); g.gain.exponentialRampToValueAtTime(.001, t + .06);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + .08);
+}
+let plan = [], t0 = 0, raf = 0;
+async function startRead() {
+  ensureAudio(); if (ac.state !== 'running') { try { await ac.resume(); } catch (e) {} }
+  stopRead(true);
+  stopPace(true);
+  const sy = syllables(S.cur.t, S.cur.k), reps = +$('reps').value, ladder = $('ladder').checked;
+  const per = S.cur.k === 'Words' ? 1 : S.cur.k === 'Pairs' ? 2 : .5;
+  let bpm = +$('bpm').value, t = .15;
+  plan = [];
+  for (let r = 0; r < reps; r++) {
+    const beat = 60 / bpm, half = beat / 2;
+    for (let i = 0; i < 4; i++) { plan.push({t, kind:'count', i, r, bpm}); click(ac.currentTime + t, i === 0); t += beat; }
+    sy.forEach((s, i) => { if (per >= 1 || i % 2 === 0) click(ac.currentTime + t, i === 0); if (per === 2) click(ac.currentTime + t + beat, false); plan.push({t, kind:'sy', i, r, bpm}); t += beat * per; });
+    t += beat;
+    if (ladder) bpm = Math.min(220, bpm + 8);
+  }
+  plan.push({t, kind:'end'});
+  t0 = ac.currentTime; S.playing = true; S.lastBpm = bpm - (ladder ? 8 : 0);
+  $('goBtn').textContent = '\u{25A0} Stop';
+  tick();
+}
+function stopRead(silent) {
+  cancelAnimationFrame(raf); S.playing = false; $('goBtn').textContent = '\u{25B6} Read to the beat';
+  document.querySelectorAll('#dText .sy').forEach(e => e.classList.remove('on', 'done'));
+  if (!silent) $('status').textContent = 'Stopped.';
+}
+function tick() {
+  const now = ac.currentTime - t0;
+  let cur = null; for (const p of plan) if (p.t <= now) cur = p;
+  if (cur) {
+    if (cur.kind === 'end') {
+      stopRead(true);
+      DB.count[S.cur.id] = (DB.count[S.cur.id] || 0) + 1;
+      (DB.days[TODAY] = DB.days[TODAY] || {})[S.cur.id] = true; save();
+      $('doneCount').textContent = DB.count[S.cur.id]; buildList(); buildToday();
+      $('status').textContent = 'Done! Was every sound clear? If yes, tap "Nailed it".';
+      return;
+    }
+    const spans = document.querySelectorAll('#dText .sy');
+    if (cur.kind === 'count') { spans.forEach(e => e.classList.remove('on', 'done')); $('status').textContent = `Round ${cur.r + 1} at ${cur.bpm} BPM: get ready\u{2026} ${4 - cur.i}`; }
+    else { spans.forEach((e, i) => { e.classList.toggle('on', i === cur.i); e.classList.toggle('done', i < cur.i); }); $('status').textContent = `Round ${cur.r + 1} at ${cur.bpm} BPM`; }
+  }
+  raf = requestAnimationFrame(tick);
+}
+$('goBtn').onclick = () => S.playing ? stopRead() : startRead();
+const P = { on:false, t0:0, raf:0 };
+function stopPace(silent) {
+  if (!P.on) return; P.on = false; cancelAnimationFrame(P.raf); $('paceBtn').textContent = '\u{23F1} Read at my own pace'; $('paceBtn').setAttribute('aria-pressed', false);
+  if (silent) return;
+  const secs = (performance.now() - P.t0) / 1000, words = S.cur.t.replace(/-/g, '').split(/[\s\/]+/).length;
+  DB.time = DB.time || {}; const prev = DB.time[S.cur.id];
+  if (secs > 1 && (!prev || secs < prev)) DB.time[S.cur.id] = +secs.toFixed(1);
+  DB.count[S.cur.id] = (DB.count[S.cur.id] || 0) + 1; (DB.days[TODAY] = DB.days[TODAY] || {})[S.cur.id] = true; save();
+  $('bestTime').textContent = DB.time[S.cur.id] ? DB.time[S.cur.id].toFixed(1) + ' s' : '\u{2013}'; $('doneCount').textContent = DB.count[S.cur.id];
+  $('status').innerHTML = `<span class="watch">${secs.toFixed(1)} s</span> \u{B7} about ${Math.round(words / secs * 60)} words per minute. Clear first, then faster.`;
+  buildList(); buildToday();
+}
+$('paceBtn').onclick = () => {
+  if (P.on) { stopPace(false); return; }
+  stopRead(true); P.on = true; P.t0 = performance.now(); $('paceBtn').textContent = '\u{25A0} Done'; $('paceBtn').setAttribute('aria-pressed', true);
+  const run = () => { if (!P.on) return; $('status').innerHTML = `<span class="watch">${((performance.now() - P.t0) / 1000).toFixed(1)} s</span> \u{B7} read it clearly, then tap Done`; P.raf = requestAnimationFrame(run); }; run();
+};
+$('bpm').oninput = e => $('bpmOut').textContent = e.target.value + ' BPM';
+$('nailBtn').onclick = () => {
+  const b = Math.max(+$('bpm').value, S.lastBpm || 0);
+  DB.best[S.cur.id] = Math.max(DB.best[S.cur.id] || 0, b); save();
+  $('bestBpm').textContent = DB.best[S.cur.id] + ' BPM';
+  const nx = Math.min(200, DB.best[S.cur.id] + 4); $('bpm').value = nx; $('bpmOut').textContent = nx + ' BPM';
+  $('status').textContent = `Saved ${DB.best[S.cur.id]} BPM as your clean speed. Next time starts at ${nx}.`;
+};
+
+/* ---------- speech ---------- */
+function speak(text, rate) {
+  if (!('speechSynthesis' in window)) { $('status').textContent = 'This browser can\u{2019}t read aloud.'; return; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = rate || .8;
+  const v = speechSynthesis.getVoices().find(v => /en-US/i.test(v.lang) && /Samantha|Google US|Allison|Ava|Aria|Jenny/i.test(v.name)) || speechSynthesis.getVoices().find(v => /en-US/i.test(v.lang));
+  if (v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+$('hearBtn').onclick = () => speak(S.cur.t.replace(/-/g, '').replace(/\//g, ', ').replace(/ /g, S.cur.k === 'Words' || S.cur.k === 'Pairs' ? ', ' : ' '), .75);
+
+/* ---------- recording ---------- */
+const R = { rec:null, stream:null, chunks:[] };
+$('recBtn').onclick = async () => {
+  if (R.rec && R.rec.state === 'recording') { R.rec.stop(); return; }
+  try { R.stream = await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch (e) { $('recNote').textContent = 'The mic isn\u{2019}t available here. Use the app on the iPad or the copy saved on the computer, and allow the microphone.'; return; }
+  R.chunks = [];
+  try { R.rec = new MediaRecorder(R.stream); } catch (e) { $('recNote').textContent = 'Recording isn\u{2019}t supported in this browser.'; return; }
+  R.rec.ondataavailable = e => { if (e.data.size) R.chunks.push(e.data); };
+  R.rec.onstop = () => {
+    R.stream.getTracks().forEach(t => t.stop());
+    const blob = new Blob(R.chunks, {type:R.rec.mimeType || 'audio/mp4'});
+    const p = $('player'); p.src = URL.createObjectURL(blob); p.hidden = false;
+    $('recBtn').setAttribute('aria-pressed', false); $('recBtn').textContent = '\u{25CF} Record me';
+    $('recNote').textContent = 'Listen back: could a stranger understand every word?';
+  };
+  R.rec.start();
+  $('recBtn').setAttribute('aria-pressed', true); $('recBtn').textContent = '\u{25A0} Stop recording';
+  $('recNote').textContent = 'Recording\u{2026} read it, then tap Stop.';
+};
+
+/* ---------- vowels & rules ---------- */
+$('vtable').innerHTML = '<thead><tr><th>IPA</th><th>As in</th><th>For singing</th><th></th></tr></thead><tbody>' +
+  VOWELS.map(([ipa, ex, tip, w]) => `<tr><td class="ipa">/${ipa}/</td><td>${ex}</td><td>${tip}</td><td><button class="say" data-w="${w}">\u{1F50A} Hear it</button></td></tr>`).join('') + '</tbody>';
+$('vtable').addEventListener('click', e => { const b = e.target.closest('.say'); if (b) speak(b.dataset.w, .7); });
+$('rules').innerHTML = RULES.map(([h, p]) => `<li><b>${h}</b>${p}</li>`).join('');
+
+/* ---------- tabs ---------- */
+function setTab(t) {
+  ['drill','vowels','sing'].forEach(k => $('t-' + k).setAttribute('aria-selected', k === t));
+  $('drillPanel').hidden = t !== 'drill'; $('vowelPanel').hidden = t !== 'vowels'; $('singPanel').hidden = t !== 'sing';
+  $('navCard').hidden = t !== 'drill';
+  if (t !== 'drill') stopRead(true);
+}
+['drill','vowels','sing'].forEach(k => $('t-' + k).onclick = () => setTab(k));
+
+/* ---------- today ---------- */
+function todaysPlan() {
+  const seed = Math.floor(Date.now() / 864e5);
+  const snd = ['p','m','t','n','l','k','s','sh','r','th','f','vowel','end'];
+  const pick = (g, kinds, n) => { const arr = D.filter(d => d.g === g && (!kinds || kinds.includes(d.k))); return arr.length ? arr[(seed * 5 + n) % arr.length] : null; };
+  const a = snd[seed % snd.length], b = snd[(seed + 5) % snd.length], c = snd[(seed + 9) % snd.length];
+  return [pick('warm', null, 0), pick('warm', null, 3), pick(a, ['Words','Pairs'], 1), pick(a, ['Twister'], 2), pick(b, ['Twister','Phrases'], 3), pick(c, ['Passage'], 4), pick('speed', null, 5), pick('sing', null, 6)].filter(Boolean);
+}
+function buildToday() {
+  const ol = $('today'); ol.innerHTML = '';
+  todaysPlan().forEach(d => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="tick ${doneToday(d.id) ? 'on' : ''}">${doneToday(d.id) ? '\u{2713}' : ''}</span>`;
+    const b = document.createElement('button'); b.textContent = d.t.replace(/-/g, '').slice(0, 40) + (d.t.length > 40 ? '\u{2026}' : '');
+    b.onclick = () => { setTab('drill'); select(d); buildList(); };
+    li.appendChild(b); ol.appendChild(li);
+  });
+  let n = 0; const d = new Date();
+  for (;;) { const k = dk(d); if (DB.days[k] && Object.keys(DB.days[k]).length) { n++; d.setDate(d.getDate() - 1); } else if (k === TODAY) { d.setDate(d.getDate() - 1); } else break; }
+  $('streak').textContent = n;
+}
+
+if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => {};
+S.open = 'warm'; buildList(); select(D[0]); buildList(); buildToday();
+})();
+</script>
+
+<script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+</body>
+</html>
