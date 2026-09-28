@@ -89,6 +89,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .go{font:800 16px var(--body);background:var(--c);color:#fff;border:0;border-radius:999px;padding:11px 20px;cursor:pointer}
 .go:hover{filter:brightness(1.08)}
 .btn{font:700 14px var(--body);border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:9px 13px;cursor:pointer}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 .btn[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .btn.rec[aria-pressed="true"]{background:#d32f2f;color:#fff;border-color:#d32f2f}
 .ctl{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700}
@@ -188,6 +189,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
           <label class="chk"><input type="checkbox" id="ladder" checked> Speed up each round</label>
           <label class="ctl" for="reps">Rounds <select id="reps"><option>1</option><option>2</option><option selected>3</option><option>5</option></select></label>
         </div>
+        <p class="src" id="drillNote" hidden>Warm-up drills use made-up syllables, so "Hear it" and "Test me" are off here. The computer voice can&#x2019;t say them naturally. They work on every word list, pair, phrase, twister and passage.</p>
         <div class="status" id="status">Say each highlighted syllable as it lights up. Two syllables per click.</div>
         <div class="controls">
           <button class="btn" id="nailBtn">&#x2713; Nailed it: go faster next time</button>
@@ -669,7 +671,9 @@ function select(d) {
   const sy = syllables(d.t, d.k);
   $('dText').className = 'big' + (d.k === 'Words' || d.k === 'Pairs' ? ' list' : d.k === 'Passage' ? ' passage' : '');
   $('dText').innerHTML = sy.map((s, i) => `<span class="sy" data-i="${i}">${s.text}</span>${s.end ? ' ' : ''}`).join('');
-  $('hearBtn').hidden = d.k === 'Drill';
+  $('hearBtn').disabled = d.k === 'Drill';
+  $('hearBtn').title = d.k === 'Drill' ? 'Made-up syllables: the computer voice can\u{2019}t say these naturally' : '';
+  $('drillNote').hidden = d.k !== 'Drill';
   $('dFocus').innerHTML = d.focus.map(f => `<span class="fchip">${f}</span>`).join('');
   $('dTip').innerHTML = `<b>How:</b> ${d.tip}`;
   const start = DB.best[d.id] ? Math.max(d.bpm, DB.best[d.id]) : d.bpm;
