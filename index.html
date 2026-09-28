@@ -103,6 +103,15 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .best b{display:block;font:800 22px var(--display)}
 .best span{font-size:12px;color:var(--muted)}
 .player{margin-top:10px;width:100%}
+.test{margin-top:12px;padding:14px;border-radius:12px;border:2px solid var(--c);background:var(--surface)}
+.test .grade{font:800 44px/1 var(--display)}
+.test .row{display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+.test .sc{font-size:14px;color:var(--muted)}
+.test .words{margin-top:10px;font-size:17px;line-height:1.8}
+.test .words .ok{color:var(--ok);font-weight:700}
+.test .words .miss{color:#d32f2f;font-weight:700;text-decoration:underline wavy}
+.test .heard{margin-top:8px;font-size:13px;color:var(--muted)}
+.btn.test-on{background:#d32f2f;color:#fff;border-color:#d32f2f}
 .check{margin-top:12px;padding:14px;border-radius:12px;border:2px solid var(--c);background:var(--surface)}
 .check h3{margin:0 0 4px;font:800 17px var(--display)}
 .check label{display:flex;gap:10px;align-items:flex-start;padding:6px 0;font-size:14.5px;cursor:pointer}
@@ -182,9 +191,16 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
         <div class="status" id="status">Say each highlighted syllable as it lights up. Two syllables per click.</div>
         <div class="controls">
           <button class="btn" id="nailBtn">&#x2713; Nailed it: go faster next time</button>
+          <button class="btn" id="testBtn">&#x1F3AF; Test me</button>
           <button class="btn rec" id="recBtn" aria-pressed="false">&#x25CF; Record me</button>
           <span class="src" id="recNote"></span>
         </div>
+        <div class="test" id="testBox" hidden>
+          <div class="row"><div class="grade" id="tGrade">&#x2013;</div><div><b id="tScore"></b><div class="sc" id="tSub"></div></div></div>
+          <div class="words" id="tWords"></div>
+          <div class="heard" id="tHeard"></div>
+        </div>
+        <p class="src" id="testNote">Test me listens with your device&#x2019;s speech recognition (Apple or Google) to check which words came through clearly. Nothing is saved.</p>
         <audio class="player" id="player" controls hidden></audio>
         <div class="check" id="check" hidden>
           <h3>Self-check</h3>
@@ -663,7 +679,8 @@ function select(d) {
   DB.time = DB.time || {}; $('bestTime').textContent = DB.time[d.id] ? DB.time[d.id].toFixed(1) + ' s' : '\u{2013}';
   stopPace(true);
   $('status').textContent = d.k === 'Words' ? 'Read to the beat: one word per click.' : d.k === 'Pairs' ? 'Read to the beat: one pair every two clicks. Or read at your own pace.' : 'Read to the beat (two syllables per click) or at your own pace with the stopwatch.';
-  $('player').hidden = true; $('check').hidden = true;
+  $('player').hidden = true; $('check').hidden = true; $('testBox').hidden = true;
+  $('testBtn').disabled = d.k === 'Drill';
 }
 
 /* ---------- audio: metronome ---------- */
@@ -793,6 +810,64 @@ $('recBtn').onclick = async () => {
   $('recNote').textContent = 'Recording\u{2026} read it, then tap Stop.';
 };
 
+/* ---------- test me: speech recognition grading ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const norm = w => w.toLowerCase().replace(/[\u{2019}']/g, "'").replace(/[^a-z0-9']/g, '');
+const T = { on:false, rec:null, text:'', t0:0, timer:0 };
+function targetWords() { return S.cur.t.replace(/-/g, '').replace(/\//g, ' ').split(/\s+/).map(w => ({raw:w, n:norm(w)})).filter(w => w.n); }
+function same(a, b) { return a === b || a.replace(/'/g, '') === b.replace(/'/g, ''); }
+function align(target, heard) {
+  // longest common subsequence: which target words were heard, in order
+  const n = target.length, m = heard.length, L = Array.from({length:n + 1}, () => new Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = same(target[i].n, heard[j]) ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const ok = new Array(n).fill(false); let i = 0, j = 0;
+  while (i < n && j < m) { if (same(target[i].n, heard[j])) { ok[i] = true; i++; j++; } else if (L[i + 1][j] >= L[i][j + 1]) i++; else j++; }
+  return ok;
+}
+function letter(x) { return x >= 90 ? 'A' : x >= 80 ? 'B' : x >= 70 ? 'C' : x >= 60 ? 'D' : 'Try again'; }
+function resetTestBtn() { $('testBtn').textContent = '\u{1F3AF} Test me'; $('testBtn').classList.remove('test-on'); }
+function finishTest() {
+  if (!T.on) return; T.on = false; clearTimeout(T.timer);
+  try { T.rec && T.rec.stop(); } catch (e) {}
+  resetTestBtn();
+  const tw = targetWords(), heard = T.text.split(/\s+/).map(norm).filter(Boolean), ok = align(tw, heard);
+  const got = ok.filter(Boolean).length, clarity = Math.round(got / tw.length * 100);
+  const secs = Math.max(1, (performance.now() - T.t0) / 1000), wpm = Math.round(tw.length / secs * 60);
+  const goal = S.cur.k === 'Words' || S.cur.k === 'Pairs' ? 45 : 110;
+  const speed = Math.min(100, Math.round(wpm / goal * 100));
+  const self = (DB.self || {})[S.cur.id];
+  const score = self == null ? Math.round(clarity * .8 + speed * .2) : Math.round(clarity * .7 + speed * .15 + (self / 7 * 100) * .15);
+  $('testBox').hidden = false;
+  if (!heard.length) { $('tGrade').textContent = '\u{2013}'; $('tScore').textContent = 'Nothing was heard.'; $('tSub').textContent = 'Check that the microphone is allowed, move closer, and try again.'; $('tWords').innerHTML = ''; $('tHeard').textContent = ''; $('status').textContent = ''; return; }
+  $('tGrade').textContent = letter(score);
+  $('tScore').textContent = `${score}/100 \u{B7} clarity ${got}/${tw.length} words (${clarity}%)`;
+  $('tSub').textContent = `${wpm} words per minute` + (self == null ? '' : ` \u{B7} self-check ${self}/7`) + (clarity < 100 ? ' \u{B7} red words were not understood' : ' \u{B7} every word came through!');
+  $('tWords').innerHTML = tw.map((w, i) => `<span class="${ok[i] ? 'ok' : 'miss'}">${w.raw}</span>`).join(' ');
+  $('tHeard').textContent = 'The computer heard: \u{201C}' + T.text.trim() + '\u{201D}';
+  $('status').textContent = 'Test done. Grade: ' + letter(score) + '.';
+  DB.test = DB.test || {}; const prev = DB.test[S.cur.id] || {best:0, n:0};
+  DB.test[S.cur.id] = {best:Math.max(prev.best, score), last:score, n:prev.n + 1, clarity};
+  DB.count[S.cur.id] = (DB.count[S.cur.id] || 0) + 1; (DB.days[TODAY] = DB.days[TODAY] || {})[S.cur.id] = true; save();
+  $('doneCount').textContent = DB.count[S.cur.id]; buildList(); buildToday();
+}
+$('testBtn').onclick = () => {
+  if (T.on) { finishTest(); return; }
+  if (!SR) { $('testNote').textContent = 'This browser can\u{2019}t do speech tests. Use Safari on the iPad or Chrome on a computer.'; return; }
+  if (S.cur.k === 'Drill') return;
+  stopRead(true); stopPace(true);
+  const r = new SR(); r.lang = 'en-US'; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
+  T.text = ''; T.on = true; T.rec = r; T.t0 = performance.now();
+  let finals = '';
+  r.onresult = e => { let interim = ''; for (let i = e.resultIndex; i < e.results.length; i++) { const tx = e.results[i][0].transcript; if (e.results[i].isFinal) finals += ' ' + tx; else interim += ' ' + tx; } T.text = finals + ' ' + interim; $('status').textContent = 'Heard: ' + T.text.trim().slice(-80); };
+  r.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture') { $('testNote').textContent = 'The microphone or speech service isn\u{2019}t allowed here. Use the iPad app or the copy on the computer, and allow the microphone.'; T.on = false; clearTimeout(T.timer); resetTestBtn(); $('status').textContent = ''; } };
+  r.onend = () => { if (T.on) { try { r.start(); } catch (err) { finishTest(); } } };
+  try { r.start(); } catch (e) { T.on = false; return; }
+  $('testBtn').textContent = '\u{25A0} Done: grade me'; $('testBtn').classList.add('test-on');
+  $('testBox').hidden = true;
+  $('status').textContent = 'Listening\u{2026} read the whole page clearly, then tap "Done: grade me".';
+  T.timer = setTimeout(finishTest, Math.max(12000, targetWords().length * 1500));
+};
+
 /* ---------- vowels & rules ---------- */
 $('vtable').innerHTML = '<thead><tr><th>IPA</th><th>As in</th><th>For singing</th><th></th></tr></thead><tbody>' +
   VOWELS.map(([ipa, ex, tip, w]) => `<tr><td class="ipa">/${ipa}/</td><td>${ex}</td><td>${tip}</td><td><button class="say" data-w="${w}">\u{1F50A} Hear it</button></td></tr>`).join('') + '</tbody>';
@@ -807,22 +882,24 @@ function buildReport() {
   const d7 = last7.filter(active).length, d30 = last30.filter(active).length;
   const ever = new Set(); Object.values(DB.days).forEach(o => Object.keys(o).forEach(id => ever.add(id)));
   const reps = Object.values(DB.count).reduce((a, b) => a + b, 0);
+  const tests = Object.values(DB.test || {}), testN = tests.reduce((a, t) => a + t.n, 0), testAvg = tests.length ? Math.round(tests.reduce((a, t) => a + t.best, 0) / tests.length) : null;
   const selfIds = Object.keys(DB.self || {}); const selfAvg = selfIds.length ? (selfIds.reduce((a, k) => a + DB.self[k], 0) / selfIds.length) : null;
-  let h = `<div class="rep"><div><b>${$('streak').textContent}</b><span>day streak</span></div><div><b>${d7}/7</b><span>days practiced this week</span></div><div><b>${d30}</b><span>days in the last 30</span></div><div><b>${ever.size}/${D.length}</b><span>pages practiced at least once</span></div><div><b>${reps}</b><span>total practice rounds</span></div><div><b>${selfAvg == null ? '\u{2013}' : selfAvg.toFixed(1) + '/7'}</b><span>average self-check</span></div></div>`;
-  h += '<table class="rtable"><thead><tr><th>Sound group</th><th>Practiced</th><th></th><th>Best speed</th></tr></thead><tbody>';
+  let h = `<div class="rep"><div><b>${$('streak').textContent}</b><span>day streak</span></div><div><b>${d7}/7</b><span>days practiced this week</span></div><div><b>${d30}</b><span>days in the last 30</span></div><div><b>${ever.size}/${D.length}</b><span>pages practiced at least once</span></div><div><b>${reps}</b><span>total practice rounds</span></div><div><b>${selfAvg == null ? '\u{2013}' : selfAvg.toFixed(1) + '/7'}</b><span>average self-check</span></div><div><b>${testN}</b><span>tests taken</span></div><div><b>${testAvg == null ? '\u{2013}' : testAvg + ' (' + letter(testAvg) + ')'}</b><span>average test score</span></div></div>`;
+  h += '<table class="rtable"><thead><tr><th>Sound group</th><th>Practiced</th><th></th><th>Best speed</th><th>Best test</th></tr></thead><tbody>';
   const lines = [];
   GROUPS.forEach(([g, name]) => {
     const items = D.filter(d => d.g === g), done = items.filter(d => ever.has(d.id)).length;
     const speeds = items.map(d => DB.best[d.id]).filter(Boolean), best = speeds.length ? Math.max(...speeds) + ' BPM' : '\u{2013}';
-    h += `<tr><td>${name}</td><td>${done}/${items.length}</td><td><div class="bar"><b style="width:${Math.round(done / items.length * 100)}%"></b></div></td><td>${best}</td></tr>`;
-    lines.push(`${name}: ${done}/${items.length} pages practiced${speeds.length ? ', best clean speed ' + best : ''}`);
+    const ts = items.map(d => (DB.test || {})[d.id]).filter(Boolean).map(t => t.best), tb = ts.length ? Math.round(ts.reduce((a, b) => a + b, 0) / ts.length) : null;
+    h += `<tr><td>${name}</td><td>${done}/${items.length}</td><td><div class="bar"><b style="width:${Math.round(done / items.length * 100)}%"></b></div></td><td>${best}</td><td>${tb == null ? '\u{2013}' : tb + ' (' + letter(tb) + ')'}</td></tr>`;
+    lines.push(`${name}: ${done}/${items.length} pages practiced${speeds.length ? ', best clean speed ' + best : ''}${tb == null ? '' : ', test average ' + tb + ' (' + letter(tb) + ')'}`);
   });
   h += '</tbody></table>';
   const weak = selfIds.filter(k => DB.self[k] <= 4).map(k => D.find(d => d.id === k)).filter(Boolean).slice(0, 6);
   if (weak.length) h += `<p class="hint" style="margin-top:12px"><b>Needs work (self-check 4/7 or lower):</b> ${weak.map(d => d.t.replace(/-/g, '').slice(0, 40)).join(' \u{B7} ')}</p>`;
   $('progBody').innerHTML = h;
   S.reportText = [`Diction Studio progress (${new Date().toLocaleDateString()})`, `Streak: ${$('streak').textContent} days \u{B7} This week: ${d7}/7 days \u{B7} Last 30 days: ${d30} days`,
-    `Pages practiced: ${ever.size}/${D.length} \u{B7} Total rounds: ${reps}` + (selfAvg == null ? '' : ` \u{B7} Average self-check: ${selfAvg.toFixed(1)}/7`), '', ...lines,
+    `Pages practiced: ${ever.size}/${D.length} \u{B7} Total rounds: ${reps} \u{B7} Tests: ${testN}` + (testAvg == null ? '' : ` \u{B7} Average test score: ${testAvg} (${letter(testAvg)})`) + `` + (selfAvg == null ? '' : ` \u{B7} Average self-check: ${selfAvg.toFixed(1)}/7`), '', ...lines,
     ...(weak.length ? ['', 'Needs work: ' + weak.map(d => d.t.replace(/-/g, '')).join('; ')] : [])].join('\n');
 }
 $('copyRep').onclick = async () => {
