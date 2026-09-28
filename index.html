@@ -100,6 +100,12 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .best b{display:block;font:800 22px var(--display)}
 .best span{font-size:12px;color:var(--muted)}
 .player{margin-top:10px;width:100%}
+.check{margin-top:12px;padding:14px;border-radius:12px;border:2px solid var(--c);background:var(--surface)}
+.check h3{margin:0 0 4px;font:800 17px var(--display)}
+.check label{display:flex;gap:10px;align-items:flex-start;padding:6px 0;font-size:14.5px;cursor:pointer}
+.check input{width:20px;height:20px;margin-top:1px;accent-color:var(--ok);flex:none}
+.check .res{margin-top:8px;font-weight:700}
+.check .again{font-size:13.5px;color:var(--muted);margin-top:4px}
 
 /* vowels */
 .vtable{width:100%;border-collapse:collapse;font-size:14px}
@@ -166,6 +172,13 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
           <span class="src" id="recNote"></span>
         </div>
         <audio class="player" id="player" controls hidden></audio>
+        <div class="check" id="check" hidden>
+          <h3>Self-check</h3>
+          <p class="hint" style="margin:0 0 4px">Play it back, then tick what was true. Be honest. This is just for you.</p>
+          <div id="checkItems"></div>
+          <div class="res" id="checkRes"></div>
+          <div class="again" id="checkAgain"></div>
+        </div>
         <div class="best"><div><b id="bestBpm">&#x2013;</b><span>best clean speed (beat)</span></div><div><b id="bestTime">&#x2013;</b><span>best time (own pace)</span></div><div><b id="doneCount">0</b><span>times practiced</span></div></div>
         <div class="tipbox" id="dTip"></div>
       </section>
@@ -520,6 +533,39 @@ const VOWELS = [
   ['a\u{28A}', 'now, how, out', 'Diphthong: stay on "ah", add "oo" at the very end.', 'now'],
   ['\u{254}\u{26A}', 'boy, joy, voice', 'Diphthong: stay on "aw", add "ee" at the end.', 'boy']
 ];
+const CHECKS = [
+  ['clear', 'A stranger could understand every word'],
+  ['ends', 'Every ending was there (t, d, k, s at the ends of words)'],
+  ['vowels', 'Vowels were clear and didn\u{2019}t slide around'],
+  ['target', 'The focus sound of this page was crisp every time'],
+  ['s', 'S sounds were short, not hissy'],
+  ['pace', 'The speed was steady: no rushing at the end'],
+  ['relaxed', 'My voice and jaw felt relaxed, not tight']
+];
+const TIPS = {
+  clear:'Slow down one step and exaggerate a little. Then bring it back to normal with the same clarity.',
+  ends:'Read it once touching every final consonant on purpose, even if it feels too much.',
+  vowels:'Hold each stressed vowel a bit longer and keep the mouth shape still while you hold it.',
+  target:'Go back to this page\u{2019}s Words or Pairs list for a minute, then try the twister again.',
+  s:'Make each s shorter and softer. Point the air at the back of your top teeth.',
+  pace:'Use Read to the beat at a slower speed so the metronome keeps you steady.',
+  relaxed:'Shake out your jaw, do the "yah yah" warm-up, and try again at an easier speed.'
+};
+function showCheck() {
+  const box = $('checkItems'); box.innerHTML = '';
+  CHECKS.forEach(([k, txt]) => {
+    const l = document.createElement('label'); l.innerHTML = `<input type="checkbox" data-k="${k}"> <span>${txt}</span>`; box.appendChild(l);
+  });
+  $('check').hidden = false; updateCheck();
+}
+function updateCheck() {
+  const boxes = [...document.querySelectorAll('#checkItems input')], n = boxes.filter(b => b.checked).length;
+  const missing = boxes.filter(b => !b.checked).map(b => b.dataset.k);
+  $('checkRes').textContent = `${n} of ${CHECKS.length}` + (n === CHECKS.length ? ': excellent! Try it a notch faster next time.' : n >= 5 ? ': really good.' : ': keep going, this is how it gets better.');
+  $('checkAgain').textContent = missing.length ? 'Next try: ' + TIPS[missing[0]] : '';
+  DB.self = DB.self || {}; DB.self[S.cur.id] = n; save();
+}
+$('checkItems').addEventListener('change', updateCheck);
 const RULES = [
   ['Sing on the vowels, tap the consonants.', 'Vowels carry the tone, so they get almost all the time. Consonants are quick and precise, placed right at the edges of the notes.'],
   ['Diphthongs: stay on the first vowel.', 'Words like "night", "day" and "go" have two vowels. Hold the first one and add the second only at the very end of the note.'],
@@ -594,7 +640,7 @@ function select(d) {
   DB.time = DB.time || {}; $('bestTime').textContent = DB.time[d.id] ? DB.time[d.id].toFixed(1) + ' s' : '\u{2013}';
   stopPace(true);
   $('status').textContent = d.k === 'Words' ? 'Read to the beat: one word per click.' : d.k === 'Pairs' ? 'Read to the beat: one pair every two clicks. Or read at your own pace.' : 'Read to the beat (two syllables per click) or at your own pace with the stopwatch.';
-  $('player').hidden = true;
+  $('player').hidden = true; $('check').hidden = true;
 }
 
 /* ---------- audio: metronome ---------- */
@@ -701,7 +747,8 @@ $('recBtn').onclick = async () => {
     const blob = new Blob(R.chunks, {type:R.rec.mimeType || 'audio/mp4'});
     const p = $('player'); p.src = URL.createObjectURL(blob); p.hidden = false;
     $('recBtn').setAttribute('aria-pressed', false); $('recBtn').textContent = '\u{25CF} Record me';
-    $('recNote').textContent = 'Listen back: could a stranger understand every word?';
+    $('recNote').textContent = 'Play it back, then fill in the self-check below.';
+    showCheck();
   };
   R.rec.start();
   $('recBtn').setAttribute('aria-pressed', true); $('recBtn').textContent = '\u{25A0} Stop recording';
